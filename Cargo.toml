@@ -7,7 +7,8 @@ edition = "2024"
 debug = ["iced/debug"]
 
 [dependencies]
-iced = "0.14"
+iced = { version = "0.14", features = ["advanced"] }
+rand = "0.10"
 
 [lints.rust]
 unsafe_code = "warn"
@@ -19,6 +20,8 @@ all = { level = "warn", priority = -1 }
 
 pedantic = { level = "warn", priority = -1 }
 missing_errors_doc = "allow"
+needless-pass-by-value = "allow"
+unused_self = "allow"
 
 cargo = { level = "warn", priority = -1 }
 cargo_common_metadata = "allow"
