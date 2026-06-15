@@ -1,10 +1,12 @@
 use iced::{
     Element, Length, Point, Rectangle, Size, Vector,
     advanced::{
+        Clipboard, Shell,
         layout::{Layout, Limits, Node},
         mouse, overlay, renderer,
-        widget::{self, Tree, Widget},
+        widget::{self, Operation, Tree, Widget},
     },
+    event::Event,
 };
 
 pub struct CenteredSquare<'a, Message, Theme, Renderer> {
@@ -32,6 +34,14 @@ where
         tree.diff_children(&[&self.content]);
     }
 
+    fn tag(&self) -> widget::tree::Tag {
+        self.content.as_widget().tag()
+    }
+
+    fn state(&self) -> widget::tree::State {
+        self.content.as_widget().state()
+    }
+
     fn size(&self) -> Size<Length> {
         Size::new(Length::Fill, Length::Fill)
     }
@@ -52,6 +62,47 @@ where
         let child_node = child_node.move_to(Point::new(offset_x, offset_y));
 
         Node::with_children(max, vec![child_node])
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut Tree,
+        layout: Layout<'_>,
+        renderer: &Renderer,
+        operation: &mut dyn Operation,
+    ) {
+        let child_layout = layout.children().next().unwrap();
+
+        operation.traverse(&mut |operation| {
+            self.content
+                .as_widget_mut()
+                .operate(tree, child_layout, renderer, operation);
+        });
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut Tree,
+        event: &Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &Renderer,
+        clipboard: &mut dyn Clipboard,
+        shell: &mut Shell<'_, Message>,
+        viewport: &Rectangle,
+    ) {
+        let child_layout = layout.children().next().unwrap();
+
+        self.content.as_widget_mut().update(
+            &mut tree.children[0],
+            event,
+            child_layout,
+            cursor,
+            renderer,
+            clipboard,
+            shell,
+            viewport,
+        );
     }
 
     fn draw(
