@@ -26,20 +26,20 @@ impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer>
 where
     Renderer: renderer::Renderer,
 {
-    fn children(&self) -> Vec<Tree> {
-        vec![Tree::new(&self.content)]
-    }
-
-    fn diff(&self, tree: &mut Tree) {
-        tree.diff_children(&[&self.content]);
-    }
-
     fn tag(&self) -> widget::tree::Tag {
         self.content.as_widget().tag()
     }
 
     fn state(&self) -> widget::tree::State {
         self.content.as_widget().state()
+    }
+
+    fn children(&self) -> Vec<Tree> {
+        vec![Tree::new(&self.content)]
+    }
+
+    fn diff(&self, tree: &mut Tree) {
+        tree.diff_children(&[&self.content]);
     }
 
     fn size(&self) -> Size<Length> {
@@ -72,7 +72,6 @@ where
         operation: &mut dyn Operation,
     ) {
         let child_layout = layout.children().next().unwrap();
-
         operation.traverse(&mut |operation| {
             self.content
                 .as_widget_mut()
@@ -92,7 +91,6 @@ where
         viewport: &Rectangle,
     ) {
         let child_layout = layout.children().next().unwrap();
-
         self.content.as_widget_mut().update(
             &mut tree.children[0],
             event,
@@ -101,29 +99,6 @@ where
             renderer,
             clipboard,
             shell,
-            viewport,
-        );
-    }
-
-    fn draw(
-        &self,
-        tree: &widget::Tree,
-        renderer: &mut Renderer,
-        theme: &Theme,
-        style: &renderer::Style,
-        layout: Layout<'_>,
-        cursor: mouse::Cursor,
-        viewport: &Rectangle,
-    ) {
-        let child_layout = layout.children().next().unwrap();
-
-        self.content.as_widget().draw(
-            &tree.children[0],
-            renderer,
-            theme,
-            style,
-            child_layout,
-            cursor,
             viewport,
         );
     }
@@ -137,7 +112,6 @@ where
         renderer: &Renderer,
     ) -> mouse::Interaction {
         let child_layout = layout.children().next().unwrap();
-
         self.content.as_widget().mouse_interaction(
             &tree.children[0],
             child_layout,
@@ -145,6 +119,28 @@ where
             viewport,
             renderer,
         )
+    }
+
+    fn draw(
+        &self,
+        tree: &widget::Tree,
+        renderer: &mut Renderer,
+        theme: &Theme,
+        style: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    ) {
+        let child_layout = layout.children().next().unwrap();
+        self.content.as_widget().draw(
+            &tree.children[0],
+            renderer,
+            theme,
+            style,
+            child_layout,
+            cursor,
+            viewport,
+        );
     }
 
     fn overlay<'b>(
@@ -156,7 +152,6 @@ where
         translation: Vector,
     ) -> Option<overlay::Element<'b, Message, Theme, Renderer>> {
         let child_layout = layout.children().next().unwrap();
-
         self.content.as_widget_mut().overlay(
             &mut tree.children[0],
             child_layout,
