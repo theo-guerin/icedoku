@@ -1,13 +1,19 @@
-use iced::advanced::layout::{self, Layout};
-use iced::advanced::renderer;
-use iced::advanced::widget::{self, Widget};
-use iced::border;
-use iced::mouse;
-use iced::{Color, Element, Length, Rectangle, Size};
+use iced::{
+    Color, Element, Length, Rectangle, Size,
+    advanced::{
+        layout::{self, Layout},
+        renderer,
+        widget::{self, Widget},
+    },
+    mouse,
+};
 
 pub struct Grid {}
 
 impl Grid {
+    const CELL_LINE_WIDTH: f32 = 1.0;
+    const BLOCK_LINE_WIDTH: f32 = 3.0;
+
     pub fn new() -> Self {
         Self {}
     }
@@ -47,14 +53,54 @@ where
         _cursor: mouse::Cursor,
         _viewport: &Rectangle,
     ) {
+        let bounds = layout.bounds();
+        let cell_size = bounds.width / 9.0;
+
         renderer.fill_quad(
             renderer::Quad {
-                bounds: layout.bounds(),
-                border: border::rounded(1000),
+                bounds,
                 ..renderer::Quad::default()
             },
-            Color::BLACK,
+            Color::WHITE,
         );
+
+        for line in 1..9 {
+            let thickness = if line % 3 == 0 {
+                Self::BLOCK_LINE_WIDTH
+            } else {
+                Self::CELL_LINE_WIDTH
+            };
+
+            let x = bounds.x + cell_size * line as f32;
+            renderer.fill_quad(
+                renderer::Quad {
+                    bounds: Rectangle {
+                        x: x - thickness / 2.0,
+                        y: bounds.y,
+                        width: thickness,
+                        height: bounds.height,
+                    },
+                    snap: true,
+                    ..renderer::Quad::default()
+                },
+                Color::BLACK,
+            );
+
+            let y = bounds.y + cell_size * line as f32;
+            renderer.fill_quad(
+                renderer::Quad {
+                    bounds: Rectangle {
+                        x: bounds.x,
+                        y: y - thickness / 2.0,
+                        width: bounds.width,
+                        height: thickness,
+                    },
+                    snap: true,
+                    ..renderer::Quad::default()
+                },
+                Color::BLACK,
+            );
+        }
     }
 }
 
