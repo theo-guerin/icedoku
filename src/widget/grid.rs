@@ -8,6 +8,7 @@ use iced::{
     mouse,
 };
 
+#[derive(Debug)]
 pub struct Grid {}
 
 impl Grid {
@@ -71,6 +72,7 @@ where
                 Self::CELL_LINE_WIDTH
             };
 
+            #[allow(clippy::cast_precision_loss)]
             let x = bounds.x + cell_size * line as f32;
             renderer.fill_quad(
                 renderer::Quad {
@@ -86,6 +88,7 @@ where
                 Color::BLACK,
             );
 
+            #[allow(clippy::cast_precision_loss)]
             let y = bounds.y + cell_size * line as f32;
             renderer.fill_quad(
                 renderer::Quad {

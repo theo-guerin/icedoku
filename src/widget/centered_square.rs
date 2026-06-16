@@ -9,6 +9,7 @@ use iced::{
     event::Event,
 };
 
+#[allow(missing_debug_implementations)]
 pub struct CenteredSquare<'a, Message, Theme, Renderer> {
     content: Element<'a, Message, Theme, Renderer>,
 }
@@ -71,6 +72,7 @@ where
         renderer: &Renderer,
         operation: &mut dyn Operation,
     ) {
+        #[allow(clippy::unwrap_used)]
         let child_layout = layout.children().next().unwrap();
         operation.traverse(&mut |operation| {
             self.content
@@ -90,6 +92,7 @@ where
         shell: &mut Shell<'_, Message>,
         viewport: &Rectangle,
     ) {
+        #[allow(clippy::unwrap_used)]
         let child_layout = layout.children().next().unwrap();
         self.content.as_widget_mut().update(
             &mut tree.children[0],
@@ -111,6 +114,7 @@ where
         viewport: &Rectangle,
         renderer: &Renderer,
     ) -> mouse::Interaction {
+        #[allow(clippy::unwrap_used)]
         let child_layout = layout.children().next().unwrap();
         self.content.as_widget().mouse_interaction(
             &tree.children[0],
@@ -131,6 +135,7 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
+        #[allow(clippy::unwrap_used)]
         let child_layout = layout.children().next().unwrap();
         self.content.as_widget().draw(
             &tree.children[0],
@@ -151,6 +156,7 @@ where
         viewport: &Rectangle,
         translation: Vector,
     ) -> Option<overlay::Element<'b, Message, Theme, Renderer>> {
+        #[allow(clippy::unwrap_used)]
         let child_layout = layout.children().next().unwrap();
         self.content.as_widget_mut().overlay(
             &mut tree.children[0],
