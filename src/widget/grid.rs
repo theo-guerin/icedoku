@@ -34,8 +34,16 @@ pub struct Grid<'a, Message> {
 
 #[derive(Debug, Clone)]
 pub enum Action {
-    SelectCell { row: usize, column: usize },
+    SelectCell {
+        row: usize,
+        column: usize,
+    },
     Escape,
+    NumberInput {
+        row: usize,
+        column: usize,
+        digit: u8,
+    },
 }
 
 #[derive(Debug)]
@@ -53,18 +61,15 @@ struct Cell {
 
 impl Cell {
     pub fn digit(&self) -> Option<u8> {
-        match self.value {
-            CellValue::Empty => None,
-            CellValue::Clue(value) | CellValue::Filled(value) => Some(value),
-        }
+        self.value.digit()
     }
 
     pub fn is_clue(&self) -> bool {
-        matches!(self.value, CellValue::Clue(_))
+        self.value.is_clue()
     }
 
     pub fn is_empty(&self) -> bool {
-        matches!(self.value, CellValue::Empty)
+        self.value.is_empty()
     }
 }
 
@@ -73,6 +78,26 @@ pub enum CellValue {
     Empty,
     Clue(u8),
     Filled(u8),
+}
+
+impl CellValue {
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn digit(&self) -> Option<u8> {
+        match self {
+            CellValue::Empty => None,
+            CellValue::Clue(value) | CellValue::Filled(value) => Some(*value),
+        }
+    }
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn is_clue(&self) -> bool {
+        matches!(self, CellValue::Clue(_))
+    }
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn is_empty(&self) -> bool {
+        matches!(self, CellValue::Empty)
+    }
 }
 
 impl State {
@@ -92,6 +117,15 @@ impl State {
             }
             Action::Escape => {
                 self.selected_cell = None;
+            }
+            Action::NumberInput { row, column, digit } => {
+                if row < SIZE
+                    && column < SIZE
+                    && (1..=9).contains(&digit)
+                    && !self.cells[row][column].is_clue()
+                {
+                    self.cells[row][column] = CellValue::Filled(digit);
+                }
             }
         }
     }
@@ -273,6 +307,18 @@ where
                 ..
             }) => {
                 shell.publish(on_edit(Action::Escape));
+            }
+            Event::Keyboard(keyboard::Event::KeyPressed {
+                key: keyboard::Key::Character(ch),
+                ..
+            }) => {
+                if let Some((row, column)) = self.state.selected_cell
+                    && !&(self.state.cells[row][column]).is_clue()
+                    && let Ok(digit) = ch.parse::<u8>()
+                    && (1..=9).contains(&digit)
+                {
+                    shell.publish(on_edit(Action::NumberInput { row, column, digit }));
+                }
             }
             _ => {}
         }
