@@ -9,12 +9,13 @@ from enum import StrEnum, auto
 from functools import reduce
 from itertools import batched
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Sequence
 
 PUZZLES_PER_DIFFICULTY = 1000
 OUTPUT_PATH = Path(__file__).parent.parent / "data" / "sudokus.bin"
 
-SOLUTION_BIT_COUNT = 257
+SOLUTION_ROW_BIT_COUNT = 29
+SOLUTION_BIT_COUNT = 9 * SOLUTION_ROW_BIT_COUNT
 PUZZLE_RECORD_SIZE = 43
 
 
@@ -59,30 +60,40 @@ def parse_qqwing_output(output_text: str) -> list[Puzzle]:
 def encode_puzzles(puzzles_by_difficulty: dict[Difficulty, list[Puzzle]]) -> bytes:
     """
     Format per puzzle:
-    - solution: 257 bits (81 base-9 digits)
+    - solution: 261 bits (9 row values, 29 bits each)
     - clue mask: 81 bits (row-major)
-    - padding: 6 bits
+    - padding: 2 bits
     """
 
-    def encode_solution_digits(digits: list[int]) -> int:
+    def encode_solution_row(digits: Sequence[int]) -> int:
         return reduce(
             lambda accumulator, number: accumulator * 9 + number - 1,
             digits,
-            initial=0,
+            0,
+        )
+
+    def encode_solution_rows(digits: Sequence[int]) -> int:
+        row_values = [encode_solution_row(row) for row in batched(digits, 9)]
+        return reduce(
+            lambda accumulator, row_value: (
+                (accumulator << SOLUTION_ROW_BIT_COUNT) | row_value
+            ),
+            row_values,
+            0,
         )
 
     result = bytearray()
 
     for puzzles in puzzles_by_difficulty.values():
         for puzzle in puzzles:
-            encoded_solution = encode_solution_digits(puzzle.solution)
+            encoded_solution = encode_solution_rows(puzzle.solution)
             clue_mask = sum(
                 1 << cell_index
                 for cell_index, digit in enumerate(puzzle.clues)
                 if digit != 0
             )
             packed_puzzle = encoded_solution + (clue_mask << SOLUTION_BIT_COUNT)
-            result.extend(packed_puzzle.to_bytes(PUZZLE_RECORD_SIZE, "big"))
+            result.extend(packed_puzzle.to_bytes(PUZZLE_RECORD_SIZE, "little"))
 
     return bytes(result)
 

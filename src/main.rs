@@ -1,10 +1,14 @@
+mod puzzle;
 mod widget;
 
 use iced::{Element, Size, Theme, window};
 
 use widget::grid;
 
-use crate::widget::centered_square;
+use crate::{
+    puzzle::{Difficulty, get_random_puzzle},
+    widget::centered_square,
+};
 
 fn main() -> iced::Result {
     let window_settings = window::Settings {
@@ -35,13 +39,13 @@ impl IceDoku {
     const MIN_WINDOW_SIZE: Size = Size::new(400.0, 400.0);
 
     fn new() -> Self {
+        let puzzle = get_random_puzzle(Difficulty::Easy);
+
         let mut cells = [[grid::CellValue::Empty; grid::SIZE]; grid::SIZE];
-        for row in &mut cells {
-            for cell in row {
-                match rand::random::<f32>() {
-                    0.0..0.4 => *cell = grid::CellValue::Clue(rand::random_range::<u8, _>(0..=9)),
-                    0.4..0.6 => *cell = grid::CellValue::Filled(rand::random_range::<u8, _>(0..=9)),
-                    _ => {}
+        for (x, row) in puzzle.clues.iter().enumerate() {
+            for (y, &value) in row.iter().enumerate() {
+                if let Some(value) = value {
+                    cells[x][y] = grid::CellValue::Clue(value);
                 }
             }
         }
