@@ -5,11 +5,12 @@
 # ///
 
 import subprocess
+from collections.abc import Sequence
 from enum import StrEnum, auto
 from functools import reduce
 from itertools import batched
 from pathlib import Path
-from typing import NamedTuple, Sequence
+from typing import NamedTuple
 
 PUZZLES_PER_DIFFICULTY = 1000
 OUTPUT_PATH = Path(__file__).parent.parent / "data" / "sudokus.bin"
