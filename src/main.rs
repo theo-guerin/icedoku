@@ -3,11 +3,9 @@ mod widget;
 
 use iced::{Element, Length, Size, Theme, widget::container, window};
 
-use widget::grid;
-
 use crate::{
     puzzle::{Difficulty, get_random_puzzle},
-    widget::aspect_ratio,
+    widget::{aspect_ratio, grid},
 };
 
 fn main() -> iced::Result {
