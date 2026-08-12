@@ -1,13 +1,13 @@
 mod puzzle;
 mod widget;
 
-use iced::{Element, Size, Theme, window};
+use iced::{Element, Length, Size, Theme, widget::container, window};
 
 use widget::grid;
 
 use crate::{
     puzzle::{Difficulty, get_random_puzzle},
-    widget::centered_square,
+    widget::aspect_ratio,
 };
 
 fn main() -> iced::Result {
@@ -62,6 +62,11 @@ impl IceDoku {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        centered_square(grid(&self.grid).on_edit(Message::GridEdited)).into()
+        container(aspect_ratio(
+            1.0,
+            grid(&self.grid).on_edit(Message::GridEdited),
+        ))
+        .center(Length::Fill)
+        .into()
     }
 }
