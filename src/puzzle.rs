@@ -5,14 +5,14 @@ use strum::EnumCount;
 use strum_macros::EnumCount;
 
 // See scripts/generator.py for the encoding details
-const ENCODED_PUZZLE_RECORDS: &[u8] = include_bytes!("../data/sudokus.bin");
+const ENCODED_RECORDS: &[u8] = include_bytes!("../data/sudokus.bin");
 
 pub const GRID_DIMENSION: usize = 9;
 pub const BOX_DIMENSION: usize = 3;
 
-const PUZZLE_RECORD_BYTE_COUNT: usize = 43;
-const PUZZLE_RECORD_COUNT: usize = ENCODED_PUZZLE_RECORDS.len() / PUZZLE_RECORD_BYTE_COUNT;
-const RECORDS_PER_DIFFICULTY: usize = PUZZLE_RECORD_COUNT / Difficulty::COUNT;
+const RECORD_BYTE_COUNT: usize = 43;
+const RECORD_COUNT: usize = ENCODED_RECORDS.len() / RECORD_BYTE_COUNT;
+const RECORDS_PER_DIFFICULTY: usize = RECORD_COUNT / Difficulty::COUNT;
 
 const SOLUTION_BIT_COUNT: usize = 261;
 const SOLUTION_ROW_BIT_COUNT: usize = 29;
@@ -48,8 +48,8 @@ pub fn get_random_puzzle(difficulty: Difficulty) -> Puzzle {
 fn random_record(difficulty: Difficulty) -> &'static [u8] {
     let record_index = random_range(difficulty_record_range(difficulty));
 
-    let start = record_index * PUZZLE_RECORD_BYTE_COUNT;
-    &ENCODED_PUZZLE_RECORDS[start..start + PUZZLE_RECORD_BYTE_COUNT]
+    let start = record_index * RECORD_BYTE_COUNT;
+    &ENCODED_RECORDS[start..start + RECORD_BYTE_COUNT]
 }
 
 fn difficulty_record_range(difficulty: Difficulty) -> Range<usize> {
