@@ -37,7 +37,7 @@ impl IceDoku {
     const MIN_WINDOW_SIZE: Size = Size::new(400.0, 400.0);
 
     fn new() -> Self {
-        let puzzle = get_random_puzzle(Difficulty::Easy);
+        let puzzle = get_random_puzzle(Difficulty::Simple);
 
         let mut cells = [[grid::CellValue::Empty; grid::SIZE]; grid::SIZE];
         for (x, row) in puzzle.clues.iter().enumerate() {

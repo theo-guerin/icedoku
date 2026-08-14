@@ -9,6 +9,8 @@ debug = ["iced/debug"]
 [dependencies]
 iced = { version = "0.14", features = ["advanced"] }
 rand = "0.10"
+strum = "0.28"
+strum_macros = "0.28"
 
 [lints.rust]
 unsafe_code = "warn"

@@ -100,7 +100,7 @@ def encode_puzzles(puzzles_by_difficulty: dict[Difficulty, list[Puzzle]]) -> byt
             (1 << cell_index) for cell_index, digit in enumerate(clues) if digit != 0
         )
 
-    encoded_puzzles = bytearray()
+    encoded_puzzle_records = bytearray()
 
     for difficulty_puzzles in puzzles_by_difficulty.values():
         for puzzle in difficulty_puzzles:
@@ -109,11 +109,11 @@ def encode_puzzles(puzzles_by_difficulty: dict[Difficulty, list[Puzzle]]) -> byt
             packed_puzzle_record = packed_solution + (
                 clue_bit_mask << SOLUTION_BIT_COUNT
             )
-            encoded_puzzles.extend(
+            encoded_puzzle_records.extend(
                 packed_puzzle_record.to_bytes(PUZZLE_RECORD_BYTE_COUNT, "little")
             )
 
-    return bytes(encoded_puzzles)
+    return bytes(encoded_puzzle_records)
 
 
 def generate_puzzles_by_difficulty(
