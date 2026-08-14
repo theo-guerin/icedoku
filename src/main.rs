@@ -39,7 +39,7 @@ impl IceDoku {
     fn new() -> Self {
         let puzzle = get_random_puzzle(Difficulty::Simple);
 
-        let mut cells = [[grid::CellValue::Empty; grid::SIZE]; grid::SIZE];
+        let mut cells = [[grid::CellValue::Empty; puzzle::GRID_DIMENSION]; puzzle::GRID_DIMENSION];
         for (x, row) in puzzle.clues.iter().enumerate() {
             for (y, &value) in row.iter().enumerate() {
                 if let Some(value) = value {

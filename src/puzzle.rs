@@ -7,7 +7,8 @@ use strum_macros::EnumCount;
 // See scripts/generator.py for the encoding details
 const ENCODED_PUZZLE_RECORDS: &[u8] = include_bytes!("../data/sudokus.bin");
 
-const SUDOKU_GRID_SIZE: usize = 9;
+pub const GRID_DIMENSION: usize = 9;
+pub const BOX_DIMENSION: usize = 3;
 
 const PUZZLE_RECORD_BYTE_COUNT: usize = 43;
 const PUZZLE_RECORD_COUNT: usize = ENCODED_PUZZLE_RECORDS.len() / PUZZLE_RECORD_BYTE_COUNT;
@@ -19,8 +20,8 @@ const SOLUTION_ROW_BIT_COUNT: usize = 29;
 #[derive(Debug)]
 pub struct Puzzle {
     pub difficulty: Difficulty,
-    pub clues: [[Option<u8>; SUDOKU_GRID_SIZE]; SUDOKU_GRID_SIZE],
-    pub solution: [[u8; SUDOKU_GRID_SIZE]; SUDOKU_GRID_SIZE],
+    pub clues: [[Option<u8>; GRID_DIMENSION]; GRID_DIMENSION],
+    pub solution: [[u8; GRID_DIMENSION]; GRID_DIMENSION],
 }
 
 #[derive(Debug, Clone, Copy, EnumCount)]
@@ -56,11 +57,11 @@ fn difficulty_record_range(difficulty: Difficulty) -> Range<usize> {
     start..start + RECORDS_PER_DIFFICULTY
 }
 
-fn decode_solution(record: &[u8]) -> [[u8; SUDOKU_GRID_SIZE]; SUDOKU_GRID_SIZE] {
-    let mut rows = [[0; SUDOKU_GRID_SIZE]; SUDOKU_GRID_SIZE];
+fn decode_solution(record: &[u8]) -> [[u8; GRID_DIMENSION]; GRID_DIMENSION] {
+    let mut rows = [[0; GRID_DIMENSION]; GRID_DIMENSION];
 
     for (index, row) in rows.iter_mut().enumerate() {
-        let start_bit = (SUDOKU_GRID_SIZE - 1 - index) * SOLUTION_ROW_BIT_COUNT;
+        let start_bit = (GRID_DIMENSION - 1 - index) * SOLUTION_ROW_BIT_COUNT;
         let packed_row = extract_bits::<SOLUTION_ROW_BIT_COUNT>(record, start_bit);
         *row = decode_packed_solution_row(packed_row);
     }
@@ -84,8 +85,8 @@ fn extract_bits<const BIT_COUNT: usize>(record: &[u8], start_bit: usize) -> u32 
     value
 }
 
-fn decode_packed_solution_row(packed_row: u32) -> [u8; SUDOKU_GRID_SIZE] {
-    let mut row = [0; SUDOKU_GRID_SIZE];
+fn decode_packed_solution_row(packed_row: u32) -> [u8; GRID_DIMENSION] {
+    let mut row = [0; GRID_DIMENSION];
 
     let mut packed_row = packed_row;
     for column in row.iter_mut().rev() {
@@ -98,13 +99,13 @@ fn decode_packed_solution_row(packed_row: u32) -> [u8; SUDOKU_GRID_SIZE] {
 
 fn build_clues(
     record: &[u8],
-    solution: [[u8; SUDOKU_GRID_SIZE]; SUDOKU_GRID_SIZE],
-) -> [[Option<u8>; SUDOKU_GRID_SIZE]; SUDOKU_GRID_SIZE] {
-    let mut clues = [[None; SUDOKU_GRID_SIZE]; SUDOKU_GRID_SIZE];
+    solution: [[u8; GRID_DIMENSION]; GRID_DIMENSION],
+) -> [[Option<u8>; GRID_DIMENSION]; GRID_DIMENSION] {
+    let mut clues = [[None; GRID_DIMENSION]; GRID_DIMENSION];
 
-    for row in 0..SUDOKU_GRID_SIZE {
-        for column in 0..SUDOKU_GRID_SIZE {
-            let bit_index = SOLUTION_BIT_COUNT + row * SUDOKU_GRID_SIZE + column;
+    for row in 0..GRID_DIMENSION {
+        for column in 0..GRID_DIMENSION {
+            let bit_index = SOLUTION_BIT_COUNT + row * GRID_DIMENSION + column;
             let byte_index = bit_index / 8;
             let bit_in_byte = bit_index % 8;
             let bit = (record[byte_index] >> bit_in_byte) & 1;

@@ -10,8 +10,7 @@ use iced::{
     alignment, keyboard, mouse,
 };
 
-pub const SIZE: usize = 9;
-const BOX_SIZE: usize = 3;
+use crate::puzzle::{BOX_DIMENSION, GRID_DIMENSION};
 
 const CELL_LINE_WIDTH: f32 = 1.0;
 const BLOCK_LINE_WIDTH: f32 = 3.0;
@@ -48,7 +47,7 @@ pub enum Action {
 
 #[derive(Debug)]
 pub struct State {
-    cells: [[CellValue; SIZE]; SIZE],
+    cells: [[CellValue; GRID_DIMENSION]; GRID_DIMENSION],
     selected_cell: Option<(usize, usize)>,
 }
 
@@ -101,7 +100,7 @@ impl CellValue {
 }
 
 impl State {
-    pub fn new(cells: [[CellValue; SIZE]; SIZE]) -> Self {
+    pub fn new(cells: [[CellValue; GRID_DIMENSION]; GRID_DIMENSION]) -> Self {
         Self {
             cells,
             selected_cell: None,
@@ -111,7 +110,7 @@ impl State {
     pub fn perform(&mut self, action: Action) {
         match action {
             Action::SelectCell { row, column } => {
-                if row < SIZE && column < SIZE {
+                if row < GRID_DIMENSION && column < GRID_DIMENSION {
                     self.selected_cell = Some((row, column));
                 }
             }
@@ -119,8 +118,8 @@ impl State {
                 self.selected_cell = None;
             }
             Action::NumberInput { row, column, digit } => {
-                if row < SIZE
-                    && column < SIZE
+                if row < GRID_DIMENSION
+                    && column < GRID_DIMENSION
                     && (1..=9).contains(&digit)
                     && !self.cells[row][column].is_clue()
                 {
@@ -164,8 +163,8 @@ fn draw_cell_background(
     } else if !cell.is_empty() && cell.digit() == selected_cell.digit() {
         SAME_DIGIT_CELL_COLOR
     } else if (cell.row == selected_cell.row || cell.column == selected_cell.column)
-        || (cell.row / BOX_SIZE == selected_cell.row / BOX_SIZE
-            && cell.column / BOX_SIZE == selected_cell.column / BOX_SIZE)
+        || (cell.row / BOX_DIMENSION == selected_cell.row / BOX_DIMENSION
+            && cell.column / BOX_DIMENSION == selected_cell.column / BOX_DIMENSION)
     {
         RELATED_CELL_COLOR
     } else {
@@ -211,8 +210,8 @@ fn draw_cell_digit(renderer: &mut impl text::Renderer, cell: &Cell, bounds: Rect
 }
 
 fn draw_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, cell_size: f32) {
-    for line in 1..SIZE {
-        let thickness = if line % BOX_SIZE == 0 {
+    for line in 1..GRID_DIMENSION {
+        let thickness = if line % BOX_DIMENSION == 0 {
             BLOCK_LINE_WIDTH
         } else {
             CELL_LINE_WIDTH
@@ -294,7 +293,7 @@ where
         match event {
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
                 #[allow(clippy::cast_precision_loss)]
-                let cell_size = layout.bounds().width / SIZE as f32;
+                let cell_size = layout.bounds().width / GRID_DIMENSION as f32;
                 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
                 let column = (position.x / cell_size) as usize;
                 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -351,7 +350,7 @@ where
     ) {
         let bounds = layout.bounds();
         #[allow(clippy::cast_precision_loss)]
-        let cell_size = bounds.width / SIZE as f32;
+        let cell_size = bounds.width / GRID_DIMENSION as f32;
 
         renderer.fill_quad(
             renderer::Quad {
