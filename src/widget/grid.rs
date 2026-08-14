@@ -12,13 +12,13 @@ use iced::{
 
 use crate::puzzle::{BOX_DIMENSION, GRID_DIMENSION};
 
-const CELL_LINE_WIDTH: f32 = 1.0;
-const BLOCK_LINE_WIDTH: f32 = 3.0;
+const CELL_BORDER_WIDTH: f32 = 1.0;
+const BOX_BORDER_WIDTH: f32 = 3.0;
 
 const BACKGROUND_COLOR: Color = Color::from_rgb8(255, 255, 255);
 const SELECTED_CELL_COLOR: Color = Color::from_rgb8(191, 219, 254);
-const RELATED_CELL_COLOR: Color = Color::from_rgb8(239, 246, 255);
-const SAME_DIGIT_CELL_COLOR: Color = Color::from_rgb8(219, 234, 254);
+const PEER_CELL_COLOR: Color = Color::from_rgb8(239, 246, 255);
+const MATCHING_DIGIT_CELL_COLOR: Color = Color::from_rgb8(219, 234, 254);
 const CLUE_DIGIT_COLOR: Color = Color::from_rgb8(0, 0, 0);
 const FILLED_DIGIT_COLOR: Color = Color::from_rgb8(100, 100, 140);
 const LINE_COLOR: Color = Color::from_rgb8(0, 0, 0);
@@ -161,12 +161,12 @@ fn draw_cell_background(
     let background_color = if cell.row == selected_cell.row && cell.column == selected_cell.column {
         SELECTED_CELL_COLOR
     } else if !cell.is_empty() && cell.digit() == selected_cell.digit() {
-        SAME_DIGIT_CELL_COLOR
+        MATCHING_DIGIT_CELL_COLOR
     } else if (cell.row == selected_cell.row || cell.column == selected_cell.column)
         || (cell.row / BOX_DIMENSION == selected_cell.row / BOX_DIMENSION
             && cell.column / BOX_DIMENSION == selected_cell.column / BOX_DIMENSION)
     {
-        RELATED_CELL_COLOR
+        PEER_CELL_COLOR
     } else {
         return;
     };
@@ -212,9 +212,9 @@ fn draw_cell_digit(renderer: &mut impl text::Renderer, cell: &Cell, bounds: Rect
 fn draw_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, cell_size: f32) {
     for line in 1..GRID_DIMENSION {
         let thickness = if line % BOX_DIMENSION == 0 {
-            BLOCK_LINE_WIDTH
+            BOX_BORDER_WIDTH
         } else {
-            CELL_LINE_WIDTH
+            CELL_BORDER_WIDTH
         };
 
         #[allow(clippy::cast_precision_loss)]
