@@ -33,16 +33,9 @@ pub struct Grid<'a, Message> {
 
 #[derive(Debug, Clone)]
 pub enum Action {
-    SelectCell {
-        row: usize,
-        column: usize,
-    },
+    SelectCell { row: usize, column: usize },
     ClearSelection,
-    EnterDigit {
-        row: usize,
-        column: usize,
-        digit: u8,
-    },
+    EnterDigit(u8),
 }
 
 #[derive(Debug)]
@@ -117,12 +110,12 @@ impl State {
             Action::ClearSelection => {
                 self.selected_cell = None;
             }
-            Action::EnterDigit { row, column, digit } => {
-                if row < GRID_DIMENSION
-                    && column < GRID_DIMENSION
-                    && (1..=9).contains(&digit)
-                    && !self.cells[row][column].is_clue()
-                {
+            Action::EnterDigit(digit) => {
+                let Some((row, column)) = self.selected_cell else {
+                    return;
+                };
+
+                if (1..=9).contains(&digit) && !self.cells[row][column].is_clue() {
                     self.cells[row][column] = CellValue::Entry(digit);
                 }
             }
@@ -311,12 +304,10 @@ where
                 key: keyboard::Key::Character(ch),
                 ..
             }) => {
-                if let Some((row, column)) = self.state.selected_cell
-                    && !&(self.state.cells[row][column]).is_clue()
-                    && let Ok(digit) = ch.parse::<u8>()
+                if let Ok(digit) = ch.parse::<u8>()
                     && (1..=9).contains(&digit)
                 {
-                    shell.publish(on_action(Action::EnterDigit { row, column, digit }));
+                    shell.publish(on_action(Action::EnterDigit(digit)));
                 }
             }
             _ => {}
