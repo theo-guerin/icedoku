@@ -20,15 +20,15 @@ const SELECTED_CELL_COLOR: Color = Color::from_rgb8(191, 219, 254);
 const PEER_CELL_COLOR: Color = Color::from_rgb8(239, 246, 255);
 const MATCHING_DIGIT_CELL_COLOR: Color = Color::from_rgb8(219, 234, 254);
 const CLUE_DIGIT_COLOR: Color = Color::from_rgb8(0, 0, 0);
-const FILLED_DIGIT_COLOR: Color = Color::from_rgb8(100, 100, 140);
+const ENTRY_DIGIT_COLOR: Color = Color::from_rgb8(100, 100, 140);
 const LINE_COLOR: Color = Color::from_rgb8(0, 0, 0);
 
-const DIGIT_SCALE_FACTOR: f32 = 0.5;
+const DIGIT_SIZE_RATIO: f32 = 0.5;
 
 #[allow(missing_debug_implementations)]
 pub struct Grid<'a, Message> {
     state: &'a State,
-    on_edit: Option<Box<dyn Fn(Action) -> Message + 'a>>,
+    on_action: Option<Box<dyn Fn(Action) -> Message + 'a>>,
 }
 
 #[derive(Debug, Clone)]
@@ -37,8 +37,8 @@ pub enum Action {
         row: usize,
         column: usize,
     },
-    Escape,
-    NumberInput {
+    ClearSelection,
+    EnterDigit {
         row: usize,
         column: usize,
         digit: u8,
@@ -72,11 +72,11 @@ impl Cell {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy)]
 pub enum CellValue {
     Empty,
     Clue(u8),
-    Filled(u8),
+    Entry(u8),
 }
 
 impl CellValue {
@@ -84,7 +84,7 @@ impl CellValue {
     pub fn digit(&self) -> Option<u8> {
         match self {
             CellValue::Empty => None,
-            CellValue::Clue(value) | CellValue::Filled(value) => Some(*value),
+            CellValue::Clue(value) | CellValue::Entry(value) => Some(*value),
         }
     }
 
@@ -114,16 +114,16 @@ impl State {
                     self.selected_cell = Some((row, column));
                 }
             }
-            Action::Escape => {
+            Action::ClearSelection => {
                 self.selected_cell = None;
             }
-            Action::NumberInput { row, column, digit } => {
+            Action::EnterDigit { row, column, digit } => {
                 if row < GRID_DIMENSION
                     && column < GRID_DIMENSION
                     && (1..=9).contains(&digit)
                     && !self.cells[row][column].is_clue()
                 {
-                    self.cells[row][column] = CellValue::Filled(digit);
+                    self.cells[row][column] = CellValue::Entry(digit);
                 }
             }
         }
@@ -134,12 +134,12 @@ impl<'a, Message> Grid<'a, Message> {
     pub fn new(state: &'a State) -> Self {
         Self {
             state,
-            on_edit: None,
+            on_action: None,
         }
     }
 
     pub fn on_edit(mut self, f: impl Fn(Action) -> Message + 'a) -> Self {
-        self.on_edit = Some(Box::new(f));
+        self.on_action = Some(Box::new(f));
         self
     }
 }
@@ -148,7 +148,7 @@ pub fn grid<Message>(state: &State) -> Grid<'_, Message> {
     Grid::new(state)
 }
 
-fn draw_cell_background(
+fn draw_cell_highlight(
     renderer: &mut impl renderer::Renderer,
     cell: &Cell,
     cell_bounds: Rectangle,
@@ -158,7 +158,7 @@ fn draw_cell_background(
         return;
     };
 
-    let background_color = if cell.row == selected_cell.row && cell.column == selected_cell.column {
+    let highlight_color = if cell.row == selected_cell.row && cell.column == selected_cell.column {
         SELECTED_CELL_COLOR
     } else if !cell.is_empty() && cell.digit() == selected_cell.digit() {
         MATCHING_DIGIT_CELL_COLOR
@@ -176,7 +176,7 @@ fn draw_cell_background(
             bounds: cell_bounds,
             ..renderer::Quad::default()
         },
-        background_color,
+        highlight_color,
     );
 }
 
@@ -188,14 +188,14 @@ fn draw_cell_digit(renderer: &mut impl text::Renderer, cell: &Cell, bounds: Rect
     let color = if cell.is_clue() {
         CLUE_DIGIT_COLOR
     } else {
-        FILLED_DIGIT_COLOR
+        ENTRY_DIGIT_COLOR
     };
 
     renderer.fill_text(
         Text {
             content: digit.to_string(),
             bounds: bounds.size(),
-            size: Pixels(bounds.width * DIGIT_SCALE_FACTOR),
+            size: Pixels(bounds.width * DIGIT_SIZE_RATIO),
             line_height: text::LineHeight::default(),
             font: renderer.default_font(),
             align_x: text::Alignment::Center,
@@ -209,7 +209,7 @@ fn draw_cell_digit(renderer: &mut impl text::Renderer, cell: &Cell, bounds: Rect
     );
 }
 
-fn draw_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, cell_size: f32) {
+fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, cell_size: f32) {
     for line in 1..GRID_DIMENSION {
         let thickness = if line % BOX_DIMENSION == 0 {
             BOX_BORDER_WIDTH
@@ -282,7 +282,7 @@ where
         shell: &mut Shell<'_, Message>,
         _viewport: &Rectangle,
     ) {
-        let Some(on_edit) = &self.on_edit else {
+        let Some(on_edit) = &self.on_action else {
             return;
         };
 
@@ -305,7 +305,7 @@ where
                 key: keyboard::Key::Named(keyboard::key::Named::Escape),
                 ..
             }) => {
-                shell.publish(on_edit(Action::Escape));
+                shell.publish(on_edit(Action::ClearSelection));
             }
             Event::Keyboard(keyboard::Event::KeyPressed {
                 key: keyboard::Key::Character(ch),
@@ -316,7 +316,7 @@ where
                     && let Ok(digit) = ch.parse::<u8>()
                     && (1..=9).contains(&digit)
                 {
-                    shell.publish(on_edit(Action::NumberInput { row, column, digit }));
+                    shell.publish(on_edit(Action::EnterDigit { row, column, digit }));
                 }
             }
             _ => {}
@@ -385,12 +385,12 @@ where
                     height: cell_size,
                 };
 
-                draw_cell_background(renderer, &cell, cell_bounds, selected_cell.as_ref());
+                draw_cell_highlight(renderer, &cell, cell_bounds, selected_cell.as_ref());
                 draw_cell_digit(renderer, &cell, cell_bounds);
             }
         }
 
-        draw_lines(renderer, bounds, cell_size);
+        draw_grid_lines(renderer, bounds, cell_size);
     }
 }
 
