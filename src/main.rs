@@ -62,7 +62,7 @@ impl IceDoku {
     fn view(&self) -> Element<'_, Message> {
         container(aspect_ratio(
             1.0,
-            grid(&self.grid).on_edit(Message::GridEdited),
+            grid(&self.grid).on_action(Message::GridEdited),
         ))
         .center(Length::Fill)
         .into()

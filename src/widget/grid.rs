@@ -138,7 +138,7 @@ impl<'a, Message> Grid<'a, Message> {
         }
     }
 
-    pub fn on_edit(mut self, f: impl Fn(Action) -> Message + 'a) -> Self {
+    pub fn on_action(mut self, f: impl Fn(Action) -> Message + 'a) -> Self {
         self.on_action = Some(Box::new(f));
         self
     }
@@ -282,16 +282,16 @@ where
         shell: &mut Shell<'_, Message>,
         _viewport: &Rectangle,
     ) {
-        let Some(on_edit) = &self.on_action else {
-            return;
-        };
-
-        let Some(position) = cursor.position_in(layout.bounds()) else {
+        let Some(on_action) = &self.on_action else {
             return;
         };
 
         match event {
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
+                let Some(position) = cursor.position_in(layout.bounds()) else {
+                    return;
+                };
+
                 #[allow(clippy::cast_precision_loss)]
                 let cell_size = layout.bounds().width / GRID_DIMENSION as f32;
                 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -299,13 +299,13 @@ where
                 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
                 let row = (position.y / cell_size) as usize;
 
-                shell.publish(on_edit(Action::SelectCell { row, column }));
+                shell.publish(on_action(Action::SelectCell { row, column }));
             }
             Event::Keyboard(keyboard::Event::KeyPressed {
                 key: keyboard::Key::Named(keyboard::key::Named::Escape),
                 ..
             }) => {
-                shell.publish(on_edit(Action::ClearSelection));
+                shell.publish(on_action(Action::ClearSelection));
             }
             Event::Keyboard(keyboard::Event::KeyPressed {
                 key: keyboard::Key::Character(ch),
@@ -316,7 +316,7 @@ where
                     && let Ok(digit) = ch.parse::<u8>()
                     && (1..=9).contains(&digit)
                 {
-                    shell.publish(on_edit(Action::EnterDigit { row, column, digit }));
+                    shell.publish(on_action(Action::EnterDigit { row, column, digit }));
                 }
             }
             _ => {}
