@@ -329,7 +329,7 @@ where
         _viewport: &Rectangle,
         _renderer: &Renderer,
     ) -> mouse::Interaction {
-        if cursor.position_in(layout.bounds()).is_some() {
+        if self.on_action.is_some() && cursor.position_in(layout.bounds()).is_some() {
             return mouse::Interaction::Pointer;
         }
 
