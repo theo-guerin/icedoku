@@ -275,6 +275,10 @@ where
         shell: &mut Shell<'_, Message>,
         _viewport: &Rectangle,
     ) {
+        if shell.is_event_captured() {
+            return;
+        }
+
         let Some(on_action) = &self.on_action else {
             return;
         };
@@ -293,21 +297,24 @@ where
                 let row = (position.y / cell_size) as usize;
 
                 shell.publish(on_action(Action::SelectCell { row, column }));
+                shell.capture_event();
             }
             Event::Keyboard(keyboard::Event::KeyPressed {
                 key: keyboard::Key::Named(keyboard::key::Named::Escape),
                 ..
-            }) => {
+            }) if self.state.selected_cell.is_some() => {
                 shell.publish(on_action(Action::ClearSelection));
+                shell.capture_event();
             }
             Event::Keyboard(keyboard::Event::KeyPressed {
                 key: keyboard::Key::Character(ch),
                 ..
-            }) => {
+            }) if self.state.selected_cell.is_some() => {
                 if let Ok(digit) = ch.parse::<u8>()
                     && (1..=9).contains(&digit)
                 {
                     shell.publish(on_action(Action::EnterDigit(digit)));
+                    shell.capture_event();
                 }
             }
             _ => {}
