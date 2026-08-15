@@ -12,6 +12,9 @@ rand = "0.10"
 strum = "0.28"
 strum_macros = "0.28"
 
+[profile.dev]
+debug = "line-tables-only"
+
 [lints.rust]
 unsafe_code = "warn"
 deprecated = "warn"
