@@ -76,19 +76,19 @@ impl CellValue {
     #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn digit(&self) -> Option<u8> {
         match self {
-            CellValue::Empty => None,
-            CellValue::Clue(value) | CellValue::Entry(value) => Some(*value),
+            Self::Empty => None,
+            Self::Clue(value) | Self::Entry(value) => Some(*value),
         }
     }
 
     #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn is_clue(&self) -> bool {
-        matches!(self, CellValue::Clue(_))
+        matches!(self, Self::Clue(_))
     }
 
     #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn is_empty(&self) -> bool {
-        matches!(self, CellValue::Empty)
+        matches!(self, Self::Empty)
     }
 }
 
