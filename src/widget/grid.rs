@@ -26,10 +26,28 @@ const BOX_LINE_COLOR: Color = Color::from_rgb8(51, 51, 51);
 
 const DIGIT_SIZE_RATIO: f32 = 0.5;
 
+pub fn grid<Message>(state: &State) -> Grid<'_, Message> {
+    Grid::new(state)
+}
+
 #[allow(missing_debug_implementations)]
 pub struct Grid<'a, Message> {
     state: &'a State,
     on_action: Option<Box<dyn Fn(Action) -> Message + 'a>>,
+}
+
+impl<'a, Message> Grid<'a, Message> {
+    pub fn new(state: &'a State) -> Self {
+        Self {
+            state,
+            on_action: None,
+        }
+    }
+
+    pub fn on_action(mut self, f: impl Fn(Action) -> Message + 'a) -> Self {
+        self.on_action = Some(Box::new(f));
+        self
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -43,54 +61,6 @@ pub enum Action {
 pub struct State {
     cells: [[CellValue; GRID_DIMENSION]; GRID_DIMENSION],
     selected_cell: Option<(usize, usize)>,
-}
-
-#[derive(Debug)]
-struct Cell {
-    row: usize,
-    column: usize,
-    value: CellValue,
-}
-
-impl Cell {
-    pub fn digit(&self) -> Option<u8> {
-        self.value.digit()
-    }
-
-    pub fn is_clue(&self) -> bool {
-        self.value.is_clue()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.value.is_empty()
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum CellValue {
-    Empty,
-    Clue(u8),
-    Entry(u8),
-}
-
-impl CellValue {
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn digit(&self) -> Option<u8> {
-        match self {
-            Self::Empty => None,
-            Self::Clue(value) | Self::Entry(value) => Some(*value),
-        }
-    }
-
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn is_clue(&self) -> bool {
-        matches!(self, Self::Clue(_))
-    }
-
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn is_empty(&self) -> bool {
-        matches!(self, Self::Empty)
-    }
 }
 
 impl State {
@@ -124,22 +94,52 @@ impl State {
     }
 }
 
-impl<'a, Message> Grid<'a, Message> {
-    pub fn new(state: &'a State) -> Self {
-        Self {
-            state,
-            on_action: None,
-        }
+#[derive(Debug)]
+struct Cell {
+    row: usize,
+    column: usize,
+    value: CellValue,
+}
+
+impl Cell {
+    fn digit(&self) -> Option<u8> {
+        self.value.digit()
     }
 
-    pub fn on_action(mut self, f: impl Fn(Action) -> Message + 'a) -> Self {
-        self.on_action = Some(Box::new(f));
-        self
+    fn is_clue(&self) -> bool {
+        self.value.is_clue()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.value.is_empty()
     }
 }
 
-pub fn grid<Message>(state: &State) -> Grid<'_, Message> {
-    Grid::new(state)
+#[derive(Debug, Clone, Copy)]
+pub enum CellValue {
+    Empty,
+    Clue(u8),
+    Entry(u8),
+}
+
+impl CellValue {
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn digit(&self) -> Option<u8> {
+        match self {
+            Self::Empty => None,
+            Self::Clue(value) | Self::Entry(value) => Some(*value),
+        }
+    }
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn is_clue(&self) -> bool {
+        matches!(self, Self::Clue(_))
+    }
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn is_empty(&self) -> bool {
+        matches!(self, Self::Empty)
+    }
 }
 
 fn draw_cell_highlight(
