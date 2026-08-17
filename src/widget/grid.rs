@@ -96,27 +96,6 @@ impl State {
     }
 }
 
-#[derive(Debug)]
-struct Cell {
-    row: usize,
-    column: usize,
-    value: CellValue,
-}
-
-impl Cell {
-    fn digit(&self) -> Option<u8> {
-        self.value.digit()
-    }
-
-    fn is_clue(&self) -> bool {
-        self.value.is_clue()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.value.is_empty()
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
 pub enum CellValue {
     Empty,
@@ -141,11 +120,32 @@ impl CellValue {
     }
 }
 
+#[derive(Debug)]
+struct PositionedCell {
+    row: usize,
+    column: usize,
+    value: CellValue,
+}
+
+impl PositionedCell {
+    fn digit(&self) -> Option<u8> {
+        self.value.digit()
+    }
+
+    fn is_clue(&self) -> bool {
+        self.value.is_clue()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.value.is_empty()
+    }
+}
+
 fn draw_cell_highlight(
     renderer: &mut impl renderer::Renderer,
-    cell: &Cell,
+    cell: &PositionedCell,
     cell_bounds: Rectangle,
-    selected_cell: Option<&Cell>,
+    selected_cell: Option<&PositionedCell>,
 ) {
     let Some(selected_cell) = selected_cell else {
         return;
@@ -173,7 +173,7 @@ fn draw_cell_highlight(
     );
 }
 
-fn draw_cell_digit(renderer: &mut impl text::Renderer, cell: &Cell, bounds: Rectangle) {
+fn draw_cell_digit(renderer: &mut impl text::Renderer, cell: &PositionedCell, bounds: Rectangle) {
     let Some(digit) = cell.digit() else {
         return;
     };
@@ -375,7 +375,7 @@ where
         let selected_cell = self
             .state
             .selected_cell
-            .map(|(selected_row, selected_column)| Cell {
+            .map(|(selected_row, selected_column)| PositionedCell {
                 row: selected_row,
                 column: selected_column,
                 value: self.state.cells[selected_row][selected_column],
@@ -383,7 +383,7 @@ where
 
         for (row_index, row) in self.state.cells.iter().enumerate() {
             for (column_index, &cell_value) in row.iter().enumerate() {
-                let cell = Cell {
+                let cell = PositionedCell {
                     row: row_index,
                     column: column_index,
                     value: cell_value,
