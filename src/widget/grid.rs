@@ -1,5 +1,5 @@
 use iced::{
-    Color, Element, Event, Length, Pixels, Rectangle, Size,
+    Border, Color, Element, Event, Length, Pixels, Rectangle, Size,
     advanced::{
         Clipboard, Shell,
         layout::{self, Layout},
@@ -242,6 +242,20 @@ fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, ce
             LINE_COLOR,
         );
     }
+
+    renderer.fill_quad(
+        renderer::Quad {
+            bounds,
+            border: Border {
+                color: LINE_COLOR,
+                width: BOX_BORDER_WIDTH,
+                ..Border::default()
+            },
+            snap: true,
+            ..renderer::Quad::default()
+        },
+        Color::TRANSPARENT,
+    );
 }
 
 impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Grid<'_, Message>
