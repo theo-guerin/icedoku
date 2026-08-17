@@ -74,9 +74,11 @@ impl State {
     pub fn perform(&mut self, action: Action) {
         match action {
             Action::SelectCell { row, column } => {
-                if row < GRID_DIMENSION && column < GRID_DIMENSION {
-                    self.selected_cell = Some((row, column));
+                if row >= GRID_DIMENSION || column >= GRID_DIMENSION {
+                    return;
                 }
+
+                self.selected_cell = Some((row, column));
             }
             Action::ClearSelection => {
                 self.selected_cell = None;
