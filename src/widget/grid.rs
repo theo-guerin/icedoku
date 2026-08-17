@@ -16,12 +16,13 @@ const CELL_BORDER_WIDTH: f32 = 1.0;
 const BOX_BORDER_WIDTH: f32 = 3.0;
 
 const BACKGROUND_COLOR: Color = Color::from_rgb8(255, 255, 255);
-const SELECTED_CELL_COLOR: Color = Color::from_rgb8(191, 219, 254);
-const PEER_CELL_COLOR: Color = Color::from_rgb8(239, 246, 255);
-const MATCHING_DIGIT_CELL_COLOR: Color = Color::from_rgb8(219, 234, 254);
-const CLUE_DIGIT_COLOR: Color = Color::from_rgb8(0, 0, 0);
-const ENTRY_DIGIT_COLOR: Color = Color::from_rgb8(100, 100, 140);
-const LINE_COLOR: Color = Color::from_rgb8(0, 0, 0);
+const SELECTED_CELL_COLOR: Color = Color::from_rgba8(0, 79, 227, 104.0 / 255.0);
+const PEER_CELL_COLOR: Color = Color::from_rgba8(101, 155, 255, 68.0 / 255.0);
+const MATCHING_DIGIT_CELL_COLOR: Color = Color::from_rgb8(139, 179, 255);
+const CLUE_DIGIT_COLOR: Color = Color::from_rgb8(51, 51, 51);
+const ENTRY_DIGIT_COLOR: Color = Color::from_rgb8(68, 68, 221);
+const CELL_LINE_COLOR: Color = Color::from_rgb8(119, 119, 119);
+const BOX_LINE_COLOR: Color = Color::from_rgb8(51, 51, 51);
 
 const DIGIT_SIZE_RATIO: f32 = 0.5;
 
@@ -204,10 +205,10 @@ fn draw_cell_digit(renderer: &mut impl text::Renderer, cell: &Cell, bounds: Rect
 
 fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, cell_size: f32) {
     for line in 1..GRID_DIMENSION {
-        let thickness = if line % BOX_DIMENSION == 0 {
-            BOX_BORDER_WIDTH
+        let (thickness, color) = if line % BOX_DIMENSION == 0 {
+            (BOX_BORDER_WIDTH, BOX_LINE_COLOR)
         } else {
-            CELL_BORDER_WIDTH
+            (CELL_BORDER_WIDTH, CELL_LINE_COLOR)
         };
 
         #[allow(clippy::cast_precision_loss)]
@@ -223,7 +224,7 @@ fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, ce
                 snap: true,
                 ..renderer::Quad::default()
             },
-            LINE_COLOR,
+            color,
         );
 
         #[allow(clippy::cast_precision_loss)]
@@ -239,7 +240,7 @@ fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, ce
                 snap: true,
                 ..renderer::Quad::default()
             },
-            LINE_COLOR,
+            color,
         );
     }
 
@@ -247,7 +248,7 @@ fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, ce
         renderer::Quad {
             bounds,
             border: Border {
-                color: LINE_COLOR,
+                color: BOX_LINE_COLOR,
                 width: BOX_BORDER_WIDTH,
                 ..Border::default()
             },
