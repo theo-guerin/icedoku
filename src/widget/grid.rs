@@ -180,7 +180,11 @@ fn draw_cell_highlight(
     );
 }
 
-fn draw_cell_digit(renderer: &mut impl text::Renderer, cell: &PositionedCell, bounds: Rectangle) {
+fn draw_cell_digit(
+    renderer: &mut impl text::Renderer,
+    cell: &PositionedCell,
+    cell_bounds: Rectangle,
+) {
     let Some(digit) = cell.digit() else {
         return;
     };
@@ -194,8 +198,8 @@ fn draw_cell_digit(renderer: &mut impl text::Renderer, cell: &PositionedCell, bo
     renderer.fill_text(
         Text {
             content: digit.to_string(),
-            bounds: bounds.size(),
-            size: Pixels(bounds.width * DIGIT_SIZE_RATIO),
+            bounds: cell_bounds.size(),
+            size: Pixels(cell_bounds.width * DIGIT_SIZE_RATIO),
             line_height: text::LineHeight::default(),
             font: renderer.default_font(),
             align_x: text::Alignment::Center,
@@ -203,9 +207,9 @@ fn draw_cell_digit(renderer: &mut impl text::Renderer, cell: &PositionedCell, bo
             shaping: text::Shaping::Basic,
             wrapping: text::Wrapping::None,
         },
-        bounds.center(),
+        cell_bounds.center(),
         color,
-        bounds,
+        cell_bounds,
     );
 }
 
