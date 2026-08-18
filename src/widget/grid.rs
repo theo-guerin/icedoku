@@ -88,8 +88,9 @@ impl State {
                     return;
                 };
 
-                if (1..=9).contains(&digit) && !self.cells[row][column].is_clue() {
-                    self.cells[row][column] = CellValue::Entry(digit);
+                let cell = &mut self.cells[row][column];
+                if (1..=9).contains(&digit) && !cell.is_clue() {
+                    *cell = CellValue::Entry(digit);
                 }
             }
         }
