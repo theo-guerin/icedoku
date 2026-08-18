@@ -329,10 +329,10 @@ where
                 shell.capture_event();
             }
             Event::Keyboard(keyboard::Event::KeyPressed {
-                key: keyboard::Key::Character(ch),
+                key: keyboard::Key::Character(character),
                 ..
             }) if self.state.selected_cell.is_some() => {
-                if let Ok(digit) = ch.parse::<u8>()
+                if let Ok(digit) = character.parse::<u8>()
                     && (1..=9).contains(&digit)
                 {
                     shell.publish(on_action(Action::EnterDigit(digit)));
