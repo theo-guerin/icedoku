@@ -5,7 +5,7 @@ use iced::{Element, Length, Size, Theme, widget::container, window};
 
 use crate::{
     puzzle::{Difficulty, get_random_puzzle},
-    widget::{aspect_ratio, grid},
+    widget::{aspect_ratio, puzzle_grid},
 };
 
 fn main() -> iced::Result {
@@ -23,12 +23,12 @@ fn main() -> iced::Result {
 
 #[derive(Debug)]
 struct IceDoku {
-    grid: grid::State,
+    puzzle_grid: puzzle_grid::State,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
-    GridEdited(grid::Action),
+    GridEdited(puzzle_grid::Action),
 }
 
 impl IceDoku {
@@ -39,30 +39,31 @@ impl IceDoku {
     fn new() -> Self {
         let puzzle = get_random_puzzle(Difficulty::Simple);
 
-        let mut cells = [[grid::CellValue::Empty; puzzle::GRID_DIMENSION]; puzzle::GRID_DIMENSION];
+        let mut cells =
+            [[puzzle_grid::CellValue::Empty; puzzle::GRID_DIMENSION]; puzzle::GRID_DIMENSION];
         for (x, row) in puzzle.clues.iter().enumerate() {
             for (y, &value) in row.iter().enumerate() {
                 if let Some(value) = value {
-                    cells[x][y] = grid::CellValue::Clue(value);
+                    cells[x][y] = puzzle_grid::CellValue::Clue(value);
                 }
             }
         }
 
         Self {
-            grid: grid::State::new(cells),
+            puzzle_grid: puzzle_grid::State::new(cells),
         }
     }
 
     fn update(&mut self, message: Message) {
         match message {
-            Message::GridEdited(action) => self.grid.perform(action),
+            Message::GridEdited(action) => self.puzzle_grid.perform(action),
         }
     }
 
     fn view(&self) -> Element<'_, Message> {
         container(aspect_ratio(
             1.0,
-            grid(&self.grid).on_action(Message::GridEdited),
+            puzzle_grid(&self.puzzle_grid).on_action(Message::GridEdited),
         ))
         .center(Length::Fill)
         .into()

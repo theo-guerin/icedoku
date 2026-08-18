@@ -26,17 +26,17 @@ const BOX_LINE_COLOR: Color = Color::from_rgb8(51, 51, 51);
 
 const DIGIT_SIZE_RATIO: f32 = 0.5;
 
-pub fn grid<Message>(state: &State) -> Grid<'_, Message> {
-    Grid::new(state)
+pub fn puzzle_grid<Message>(state: &State) -> PuzzleGrid<'_, Message> {
+    PuzzleGrid::new(state)
 }
 
 #[allow(missing_debug_implementations)]
-pub struct Grid<'a, Message> {
+pub struct PuzzleGrid<'a, Message> {
     state: &'a State,
     on_action: Option<Box<dyn Fn(Action) -> Message + 'a>>,
 }
 
-impl<'a, Message> Grid<'a, Message> {
+impl<'a, Message> PuzzleGrid<'a, Message> {
     pub fn new(state: &'a State) -> Self {
         Self {
             state,
@@ -301,7 +301,7 @@ fn digit_from_key(key: &keyboard::Key, physical_key: keyboard::key::Physical) ->
     }
 }
 
-impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Grid<'_, Message>
+impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for PuzzleGrid<'_, Message>
 where
     Renderer: advanced::Renderer + text::Renderer,
 {
@@ -453,12 +453,13 @@ where
     }
 }
 
-impl<'a, Message, Theme, Renderer> From<Grid<'a, Message>> for Element<'a, Message, Theme, Renderer>
+impl<'a, Message, Theme, Renderer> From<PuzzleGrid<'a, Message>>
+    for Element<'a, Message, Theme, Renderer>
 where
     Renderer: advanced::Renderer + text::Renderer,
     Message: 'a,
 {
-    fn from(grid: Grid<'a, Message>) -> Self {
-        Self::new(grid)
+    fn from(puzzle_grid: PuzzleGrid<'a, Message>) -> Self {
+        Self::new(puzzle_grid)
     }
 }

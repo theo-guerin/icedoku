@@ -1,5 +1,5 @@
 pub mod aspect_ratio;
-pub mod grid;
+pub mod puzzle_grid;
 
 pub use aspect_ratio::aspect_ratio;
-pub use grid::grid;
+pub use puzzle_grid::puzzle_grid;
