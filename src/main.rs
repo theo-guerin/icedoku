@@ -1,12 +1,19 @@
 mod puzzle;
 mod widget;
 
-use iced::{Element, Length, Size, Theme, widget::container, window};
+use iced::{
+    Alignment, Element, Length, Size, Theme,
+    widget::{column, container, pick_list},
+    window,
+};
+use strum::VariantArray;
 
 use crate::{
     puzzle::{Difficulty, get_random_puzzle},
     widget::{aspect_ratio, puzzle_grid},
 };
+
+const INITIAL_DIFFICULTY: Difficulty = Difficulty::Simple;
 
 fn main() -> iced::Result {
     let window_settings = window::Settings {
@@ -24,11 +31,13 @@ fn main() -> iced::Result {
 #[derive(Debug)]
 struct IceDoku {
     puzzle_grid: puzzle_grid::State,
+    difficulty: Option<Difficulty>,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     GridEdited(puzzle_grid::Action),
+    DifficultySelected(Difficulty),
 }
 
 impl IceDoku {
@@ -37,35 +46,40 @@ impl IceDoku {
     const MIN_WINDOW_SIZE: Size = Size::new(400.0, 400.0);
 
     fn new() -> Self {
-        let puzzle = get_random_puzzle(Difficulty::Simple);
-
-        let mut cells =
-            [[puzzle_grid::CellValue::Empty; puzzle::GRID_DIMENSION]; puzzle::GRID_DIMENSION];
-        for (x, row) in puzzle.clues.iter().enumerate() {
-            for (y, &value) in row.iter().enumerate() {
-                if let Some(value) = value {
-                    cells[x][y] = puzzle_grid::CellValue::Clue(value);
-                }
-            }
-        }
+        let difficulty = INITIAL_DIFFICULTY;
+        let puzzle = get_random_puzzle(difficulty);
 
         Self {
-            puzzle_grid: puzzle_grid::State::new(cells),
+            puzzle_grid: puzzle_grid::State::from(&puzzle),
+            difficulty: Some(difficulty),
         }
     }
 
     fn update(&mut self, message: Message) {
         match message {
             Message::GridEdited(action) => self.puzzle_grid.perform(action),
+            Message::DifficultySelected(difficulty) => {
+                self.difficulty = Some(difficulty);
+                let new_puzzle = get_random_puzzle(difficulty);
+                self.puzzle_grid = puzzle_grid::State::from(&new_puzzle);
+            }
         }
     }
 
     fn view(&self) -> Element<'_, Message> {
-        container(aspect_ratio(
-            1.0,
-            puzzle_grid(&self.puzzle_grid).on_action(Message::GridEdited),
-        ))
-        .center(Length::Fill)
+        column![
+            pick_list(
+                Difficulty::VARIANTS,
+                self.difficulty,
+                Message::DifficultySelected
+            ),
+            container(aspect_ratio(
+                1.0,
+                puzzle_grid(&self.puzzle_grid).on_action(Message::GridEdited),
+            ))
+            .center(Length::Fill)
+        ]
+        .align_x(Alignment::Center)
         .into()
     }
 }

@@ -10,7 +10,7 @@ use iced::{
     alignment, keyboard, mouse,
 };
 
-use crate::puzzle::{BOX_DIMENSION, GRID_DIMENSION};
+use crate::puzzle::{BOX_DIMENSION, GRID_DIMENSION, Puzzle};
 
 const CELL_LINE_WIDTH: f32 = 1.0;
 const BOX_LINE_WIDTH: f32 = 3.0;
@@ -65,13 +65,6 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(cells: [[CellValue; GRID_DIMENSION]; GRID_DIMENSION]) -> Self {
-        Self {
-            cells,
-            selected_cell: None,
-        }
-    }
-
     pub fn perform(&mut self, action: Action) {
         match action {
             Action::SelectCell { row, column } => {
@@ -104,6 +97,17 @@ impl State {
                     *cell = CellValue::Empty;
                 }
             }
+        }
+    }
+}
+
+impl From<&Puzzle> for State {
+    fn from(puzzle: &Puzzle) -> Self {
+        Self {
+            cells: puzzle
+                .clues
+                .map(|row| row.map(|clue| clue.map_or(CellValue::Empty, CellValue::Clue))),
+            selected_cell: None,
         }
     }
 }

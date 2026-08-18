@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use rand::random_range;
 use strum::EnumCount;
-use strum_macros::EnumCount;
+use strum_macros::{Display, EnumCount, VariantArray};
 
 // See scripts/generator.py for the encoding details
 const ENCODED_RECORDS: &[u8] = include_bytes!("../data/puzzles.bin");
@@ -24,7 +24,7 @@ pub struct Puzzle {
     pub solution: [[u8; GRID_DIMENSION]; GRID_DIMENSION],
 }
 
-#[derive(Debug, Clone, Copy, EnumCount)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumCount, VariantArray)]
 pub enum Difficulty {
     Simple,
     Easy,
