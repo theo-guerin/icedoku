@@ -12,8 +12,8 @@ use iced::{
 
 use crate::puzzle::{BOX_DIMENSION, GRID_DIMENSION};
 
-const CELL_BORDER_WIDTH: f32 = 1.0;
-const BOX_BORDER_WIDTH: f32 = 3.0;
+const CELL_LINE_WIDTH: f32 = 1.0;
+const BOX_LINE_WIDTH: f32 = 3.0;
 
 const BACKGROUND_COLOR: Color = Color::from_rgb8(255, 255, 255);
 const SELECTED_CELL_COLOR: Color = Color::from_rgba8(0, 79, 227, 104.0 / 255.0);
@@ -216,9 +216,9 @@ fn draw_cell_digit(
 fn draw_grid_lines(renderer: &mut impl advanced::Renderer, bounds: Rectangle, cell_size: f32) {
     for line in 1..GRID_DIMENSION {
         let (thickness, color) = if line % BOX_DIMENSION == 0 {
-            (BOX_BORDER_WIDTH, BOX_LINE_COLOR)
+            (BOX_LINE_WIDTH, BOX_LINE_COLOR)
         } else {
-            (CELL_BORDER_WIDTH, CELL_LINE_COLOR)
+            (CELL_LINE_WIDTH, CELL_LINE_COLOR)
         };
 
         #[allow(clippy::cast_precision_loss)]
@@ -257,7 +257,7 @@ fn draw_grid_lines(renderer: &mut impl advanced::Renderer, bounds: Rectangle, ce
             bounds,
             border: Border {
                 color: BOX_LINE_COLOR,
-                width: BOX_BORDER_WIDTH,
+                width: BOX_LINE_WIDTH,
                 ..Border::default()
             },
             ..renderer::Quad::default()
@@ -266,7 +266,7 @@ fn draw_grid_lines(renderer: &mut impl advanced::Renderer, bounds: Rectangle, ce
     );
 }
 
-fn input_digit(key: &keyboard::Key, physical_key: keyboard::key::Physical) -> Option<u8> {
+fn digit_from_key(key: &keyboard::Key, physical_key: keyboard::key::Physical) -> Option<u8> {
     use keyboard::key::{Code, Physical};
 
     if let keyboard::Key::Character(character) = key
@@ -354,7 +354,7 @@ where
             Event::Keyboard(keyboard::Event::KeyPressed {
                 key, physical_key, ..
             }) if self.state.selected_cell.is_some() => {
-                if let Some(digit) = input_digit(key, *physical_key) {
+                if let Some(digit) = digit_from_key(key, *physical_key) {
                     shell.publish(on_action(Action::EnterDigit(digit)));
                     shell.capture_event();
                 }
