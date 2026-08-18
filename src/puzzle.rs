@@ -5,7 +5,7 @@ use strum::EnumCount;
 use strum_macros::EnumCount;
 
 // See scripts/generator.py for the encoding details
-const ENCODED_RECORDS: &[u8] = include_bytes!("../data/sudokus.bin");
+const ENCODED_RECORDS: &[u8] = include_bytes!("../data/puzzles.bin");
 
 pub const GRID_DIMENSION: usize = 9;
 pub const BOX_DIMENSION: usize = 3;

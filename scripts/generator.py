@@ -14,13 +14,13 @@ from typing import NamedTuple
 
 PROJECT_ROOT_PATH = Path(__file__).parent.parent
 OUTPUT_DIRECTORY_PATH = PROJECT_ROOT_PATH / "data"
-OUTPUT_FILE_PATH = OUTPUT_DIRECTORY_PATH / "sudokus.bin"
+OUTPUT_FILE_PATH = OUTPUT_DIRECTORY_PATH / "puzzles.bin"
 
 PUZZLES_PER_DIFFICULTY = 1000
-SUDOKU_GRID_SIZE = 9
+PUZZLE_GRID_SIZE = 9
 
 SOLUTION_ROW_BIT_COUNT = 29
-SOLUTION_BIT_COUNT = SUDOKU_GRID_SIZE * SOLUTION_ROW_BIT_COUNT
+SOLUTION_BIT_COUNT = PUZZLE_GRID_SIZE * SOLUTION_ROW_BIT_COUNT
 PUZZLE_RECORD_BYTE_COUNT = 43
 
 
@@ -75,7 +75,7 @@ def encode_puzzles(puzzles_by_difficulty: dict[Difficulty, list[Puzzle]]) -> byt
     def encode_solution_row(row_digits: Sequence[int]) -> int:
         """Encode a solution row as a base-9 integer, mapping digits 1-9 to 0-8."""
         return reduce(
-            lambda encoded_value, digit: encoded_value * SUDOKU_GRID_SIZE + digit - 1,
+            lambda encoded_value, digit: encoded_value * PUZZLE_GRID_SIZE + digit - 1,
             row_digits,
             0,
         )
@@ -84,7 +84,7 @@ def encode_puzzles(puzzles_by_difficulty: dict[Difficulty, list[Puzzle]]) -> byt
         """Pack a solution's encoded rows into a 261-bit integer."""
         encoded_row_values = [
             encode_solution_row(row)
-            for row in batched(solution_digits, SUDOKU_GRID_SIZE)
+            for row in batched(solution_digits, PUZZLE_GRID_SIZE)
         ]
         return reduce(
             lambda packed_value, encoded_row_value: (
