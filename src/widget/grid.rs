@@ -152,7 +152,7 @@ impl PositionedCell {
 }
 
 fn draw_cell_highlight(
-    renderer: &mut impl renderer::Renderer,
+    renderer: &mut impl advanced::Renderer,
     cell: &PositionedCell,
     cell_bounds: Rectangle,
     selected_cell: Option<&PositionedCell>,
@@ -213,7 +213,7 @@ fn draw_cell_digit(
     );
 }
 
-fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, cell_size: f32) {
+fn draw_grid_lines(renderer: &mut impl advanced::Renderer, bounds: Rectangle, cell_size: f32) {
     for line in 1..GRID_DIMENSION {
         let (thickness, color) = if line % BOX_DIMENSION == 0 {
             (BOX_BORDER_WIDTH, BOX_LINE_COLOR)
@@ -268,7 +268,7 @@ fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, ce
 
 impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Grid<'_, Message>
 where
-    Renderer: renderer::Renderer + text::Renderer,
+    Renderer: advanced::Renderer + text::Renderer,
 {
     fn size(&self) -> Size<Length> {
         Size {
@@ -416,7 +416,7 @@ where
 
 impl<'a, Message, Theme, Renderer> From<Grid<'a, Message>> for Element<'a, Message, Theme, Renderer>
 where
-    Renderer: renderer::Renderer + text::Renderer,
+    Renderer: advanced::Renderer + text::Renderer,
     Message: 'a,
 {
     fn from(grid: Grid<'a, Message>) -> Self {
