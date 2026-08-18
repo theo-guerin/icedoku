@@ -231,7 +231,6 @@ fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, ce
                     width: thickness,
                     height: bounds.height,
                 },
-                snap: true,
                 ..renderer::Quad::default()
             },
             color,
@@ -247,7 +246,6 @@ fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, ce
                     width: bounds.width,
                     height: thickness,
                 },
-                snap: true,
                 ..renderer::Quad::default()
             },
             color,
@@ -262,7 +260,6 @@ fn draw_grid_lines(renderer: &mut impl renderer::Renderer, bounds: Rectangle, ce
                 width: BOX_BORDER_WIDTH,
                 ..Border::default()
             },
-            snap: true,
             ..renderer::Quad::default()
         },
         Color::TRANSPARENT,
