@@ -139,6 +139,16 @@ impl PositionedCell {
     fn is_empty(&self) -> bool {
         self.value.is_empty()
     }
+
+    fn has_same_position(&self, other: &Self) -> bool {
+        self.row == other.row && self.column == other.column
+    }
+
+    fn is_peer_of(&self, other: &Self) -> bool {
+        (self.row == other.row || self.column == other.column)
+            || (self.row / BOX_DIMENSION == other.row / BOX_DIMENSION
+                && self.column / BOX_DIMENSION == other.column / BOX_DIMENSION)
+    }
 }
 
 fn draw_cell_highlight(
@@ -151,14 +161,11 @@ fn draw_cell_highlight(
         return;
     };
 
-    let highlight_color = if cell.row == selected_cell.row && cell.column == selected_cell.column {
+    let highlight_color = if cell.has_same_position(selected_cell) {
         SELECTED_CELL_COLOR
     } else if !cell.is_empty() && cell.digit() == selected_cell.digit() {
         MATCHING_DIGIT_CELL_COLOR
-    } else if (cell.row == selected_cell.row || cell.column == selected_cell.column)
-        || (cell.row / BOX_DIMENSION == selected_cell.row / BOX_DIMENSION
-            && cell.column / BOX_DIMENSION == selected_cell.column / BOX_DIMENSION)
-    {
+    } else if cell.is_peer_of(selected_cell) {
         PEER_CELL_COLOR
     } else {
         return;
