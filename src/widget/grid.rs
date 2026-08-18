@@ -1,7 +1,7 @@
 use iced::{
     Border, Color, Element, Event, Length, Pixels, Rectangle, Size,
     advanced::{
-        Clipboard, Shell,
+        self, Clipboard, Shell,
         layout::{self, Layout},
         renderer,
         text::{self, Text},
@@ -283,7 +283,7 @@ where
         _renderer: &Renderer,
         limits: &layout::Limits,
     ) -> layout::Node {
-        layout::Node::new(limits.max())
+        layout::Node::new(limits.resolve(Length::Fill, Length::Fill, Size::ZERO))
     }
 
     fn update(
