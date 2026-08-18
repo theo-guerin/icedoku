@@ -55,6 +55,7 @@ pub enum Action {
     SelectCell { row: usize, column: usize },
     ClearSelection,
     EnterDigit(u8),
+    ClearCell,
 }
 
 #[derive(Debug)]
@@ -91,6 +92,16 @@ impl State {
                 let cell = &mut self.cells[row][column];
                 if (1..=9).contains(&digit) && !cell.is_clue() {
                     *cell = CellValue::Entry(digit);
+                }
+            }
+            Action::ClearCell => {
+                let Some((row, column)) = self.selected_cell else {
+                    return;
+                };
+
+                let cell = &mut self.cells[row][column];
+                if !cell.is_clue() {
+                    *cell = CellValue::Empty;
                 }
             }
         }
@@ -350,6 +361,13 @@ where
                 ..
             }) if self.state.selected_cell.is_some() => {
                 shell.publish(on_action(Action::ClearSelection));
+                shell.capture_event();
+            }
+            Event::Keyboard(keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Backspace),
+                ..
+            }) if self.state.selected_cell.is_some() => {
+                shell.publish(on_action(Action::ClearCell));
                 shell.capture_event();
             }
             Event::Keyboard(keyboard::Event::KeyPressed {
