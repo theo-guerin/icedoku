@@ -266,6 +266,29 @@ fn draw_grid_lines(renderer: &mut impl advanced::Renderer, bounds: Rectangle, ce
     );
 }
 
+fn input_digit(key: &keyboard::Key, physical_key: keyboard::key::Physical) -> Option<u8> {
+    use keyboard::key::{Code, Physical};
+
+    if let keyboard::Key::Character(character) = key
+        && let Ok(digit @ 1..=9) = character.parse()
+    {
+        return Some(digit);
+    }
+
+    match physical_key {
+        Physical::Code(Code::Numpad1) => Some(1),
+        Physical::Code(Code::Numpad2) => Some(2),
+        Physical::Code(Code::Numpad3) => Some(3),
+        Physical::Code(Code::Numpad4) => Some(4),
+        Physical::Code(Code::Numpad5) => Some(5),
+        Physical::Code(Code::Numpad6) => Some(6),
+        Physical::Code(Code::Numpad7) => Some(7),
+        Physical::Code(Code::Numpad8) => Some(8),
+        Physical::Code(Code::Numpad9) => Some(9),
+        _ => None,
+    }
+}
+
 impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Grid<'_, Message>
 where
     Renderer: advanced::Renderer + text::Renderer,
@@ -329,12 +352,9 @@ where
                 shell.capture_event();
             }
             Event::Keyboard(keyboard::Event::KeyPressed {
-                key: keyboard::Key::Character(character),
-                ..
+                key, physical_key, ..
             }) if self.state.selected_cell.is_some() => {
-                if let Ok(digit) = character.parse::<u8>()
-                    && (1..=9).contains(&digit)
-                {
+                if let Some(digit) = input_digit(key, *physical_key) {
                     shell.publish(on_action(Action::EnterDigit(digit)));
                     shell.capture_event();
                 }
