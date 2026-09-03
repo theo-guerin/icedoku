@@ -26,6 +26,7 @@ const CELL_LINE_COLOR: Color = Color::from_rgb8(119, 119, 119);
 const BOX_LINE_COLOR: Color = Color::from_rgb8(51, 51, 51);
 
 const DIGIT_SIZE_RATIO: f32 = 0.5;
+const CANDIDATE_DIGIT_SIZE_RATIO: f32 = 0.18;
 
 pub fn puzzle_grid<'a, Message>(
     state: &'a State,
@@ -62,6 +63,7 @@ pub enum Action {
     ClearSelection,
     EnterDigit(u8),
     ClearCell,
+    ToggleNotes,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -74,7 +76,9 @@ pub struct CellEdit {
 #[derive(Debug)]
 pub struct State {
     cells: [[CellValue; GRID_DIMENSION]; GRID_DIMENSION],
+    candidates: [[CandidateSet; GRID_DIMENSION]; GRID_DIMENSION],
     selected_cell: Option<(usize, usize)>,
+    notes_enabled: bool,
 }
 
 impl State {
@@ -93,11 +97,20 @@ impl State {
             Action::EnterDigit(digit) => {
                 let (row, column) = self.selected_cell?;
 
+                if self.notes_enabled {
+                    if self.cells[row][column].is_empty() {
+                        self.candidates[row][column].toggle(digit);
+                    }
+
+                    return None;
+                }
+
                 let cell = &mut self.cells[row][column];
                 let entry = CellValue::Entry(digit);
 
                 if (1..=9).contains(&digit) && !cell.is_clue() && *cell != entry {
                     *cell = entry;
+                    self.candidates[row][column].clear();
 
                     return Some(CellEdit {
                         row,
@@ -119,6 +132,11 @@ impl State {
                         digit: None,
                     });
                 }
+
+                self.candidates[row][column].clear();
+            }
+            Action::ToggleNotes => {
+                self.notes_enabled = !self.notes_enabled;
             }
         }
 
@@ -133,6 +151,25 @@ impl State {
                 .all(|(cell, solution)| cell.digit() == Some(*solution))
         })
     }
+
+    pub fn remove_candidate_from_peers(&mut self, row: usize, column: usize, digit: u8) {
+        for candidate_row in 0..GRID_DIMENSION {
+            for candidate_column in 0..GRID_DIMENSION {
+                let shares_row = candidate_row == row;
+                let shares_column = candidate_column == column;
+                let shares_box = candidate_row / BOX_DIMENSION == row / BOX_DIMENSION
+                    && candidate_column / BOX_DIMENSION == column / BOX_DIMENSION;
+
+                if shares_row || shares_column || shares_box {
+                    self.candidates[candidate_row][candidate_column].remove(digit);
+                }
+            }
+        }
+    }
+
+    pub fn notes_enabled(&self) -> bool {
+        self.notes_enabled
+    }
 }
 
 impl From<&Puzzle> for State {
@@ -141,7 +178,9 @@ impl From<&Puzzle> for State {
             cells: puzzle
                 .clues
                 .map(|row| row.map(|clue| clue.map_or(CellValue::Empty, CellValue::Clue))),
+            candidates: [[CandidateSet::default(); GRID_DIMENSION]; GRID_DIMENSION],
             selected_cell: None,
+            notes_enabled: false,
         }
     }
 }
@@ -168,6 +207,37 @@ impl CellValue {
     pub fn is_empty(self) -> bool {
         matches!(self, Self::Empty)
     }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct CandidateSet(u16);
+
+impl CandidateSet {
+    fn toggle(&mut self, digit: u8) {
+        if let Some(bit) = candidate_bit(digit) {
+            self.0 ^= bit;
+        }
+    }
+
+    fn remove(&mut self, digit: u8) {
+        if let Some(bit) = candidate_bit(digit) {
+            self.0 &= !bit;
+        }
+    }
+
+    fn contains(self, digit: u8) -> bool {
+        candidate_bit(digit).is_some_and(|bit| self.0 & bit != 0)
+    }
+
+    fn clear(&mut self) {
+        self.0 = 0;
+    }
+}
+
+fn candidate_bit(digit: u8) -> Option<u16> {
+    (1..=9)
+        .contains(&digit)
+        .then(|| 1_u16 << u32::from(digit - 1))
 }
 
 #[derive(Debug)]
@@ -266,6 +336,50 @@ fn draw_cell_digit(
     );
 }
 
+fn draw_candidates(
+    renderer: &mut impl text::Renderer,
+    candidates: CandidateSet,
+    cell_bounds: Rectangle,
+) {
+    #[allow(clippy::cast_precision_loss)]
+    let candidate_cell_size = cell_bounds.width / BOX_DIMENSION as f32;
+
+    for digit in 1..=9 {
+        if !candidates.contains(digit) {
+            continue;
+        }
+
+        let index = usize::from(digit - 1);
+        let row = index / BOX_DIMENSION;
+        let column = index % BOX_DIMENSION;
+        let candidate_bounds = Rectangle {
+            #[allow(clippy::cast_precision_loss)]
+            x: cell_bounds.x + candidate_cell_size * column as f32,
+            #[allow(clippy::cast_precision_loss)]
+            y: cell_bounds.y + candidate_cell_size * row as f32,
+            width: candidate_cell_size,
+            height: candidate_cell_size,
+        };
+
+        renderer.fill_text(
+            Text {
+                content: digit.to_string(),
+                bounds: candidate_bounds.size(),
+                size: Pixels(cell_bounds.width * CANDIDATE_DIGIT_SIZE_RATIO),
+                line_height: text::LineHeight::default(),
+                font: renderer.default_font(),
+                align_x: text::Alignment::Center,
+                align_y: alignment::Vertical::Center,
+                shaping: text::Shaping::Basic,
+                wrapping: text::Wrapping::None,
+            },
+            candidate_bounds.center(),
+            ENTRY_DIGIT_COLOR,
+            candidate_bounds,
+        );
+    }
+}
+
 fn draw_grid_lines(renderer: &mut impl advanced::Renderer, bounds: Rectangle, cell_size: f32) {
     for line in 1..GRID_DIMENSION {
         let (thickness, color) = if line % BOX_DIMENSION == 0 {
@@ -342,6 +456,13 @@ fn digit_from_key(key: &keyboard::Key, physical_key: keyboard::key::Physical) ->
     }
 }
 
+fn is_notes_toggle_key(key: &keyboard::Key, modifiers: keyboard::Modifiers) -> bool {
+    matches!(key, keyboard::Key::Character(character) if character.eq_ignore_ascii_case("n"))
+        && !modifiers.control()
+        && !modifiers.alt()
+        && !modifiers.logo()
+}
+
 impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for PuzzleGrid<'_, Message>
 where
     Renderer: advanced::Renderer + text::Renderer,
@@ -409,6 +530,15 @@ where
                 ..
             }) if self.state.selected_cell.is_some() => {
                 shell.publish(on_action(Action::ClearCell));
+                shell.capture_event();
+            }
+            Event::Keyboard(keyboard::Event::KeyPressed {
+                key,
+                modifiers,
+                repeat: false,
+                ..
+            }) if is_notes_toggle_key(key, *modifiers) => {
+                shell.publish(on_action(Action::ToggleNotes));
                 shell.capture_event();
             }
             Event::Keyboard(keyboard::Event::KeyPressed {
@@ -490,7 +620,15 @@ where
                     && !cell.is_empty()
                     && cell.digit() != Some(self.solution[row_index][column_index]);
 
-                draw_cell_digit(renderer, &cell, cell_bounds, is_incorrect);
+                if cell.is_empty() {
+                    draw_candidates(
+                        renderer,
+                        self.state.candidates[row_index][column_index],
+                        cell_bounds,
+                    );
+                } else {
+                    draw_cell_digit(renderer, &cell, cell_bounds, is_incorrect);
+                }
             }
         }
 

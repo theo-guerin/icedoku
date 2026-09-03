@@ -44,14 +44,19 @@ impl Game {
             return;
         };
 
-        if digit != self.puzzle.solution[edit.row][edit.column] {
+        if digit == self.puzzle.solution[edit.row][edit.column] {
+            self.grid
+                .remove_candidate_from_peers(edit.row, edit.column, digit);
+
+            if self.grid.matches_solution(&self.puzzle.solution) {
+                self.status = Status::Won;
+            }
+        } else {
             self.mistakes += 1;
 
             if self.mistakes == MAX_MISTAKES {
                 self.status = Status::Lost;
             }
-        } else if self.grid.matches_solution(&self.puzzle.solution) {
-            self.status = Status::Won;
         }
     }
 

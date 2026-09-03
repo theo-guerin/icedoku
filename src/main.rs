@@ -119,15 +119,25 @@ impl IceDoku {
     }
 
     fn playing_view(&self) -> Element<'_, Message> {
+        let actions = row![
+            button("Notes")
+                .on_press(Message::PuzzleGrid(puzzle_grid::Action::ToggleNotes))
+                .style(if self.game.grid().notes_enabled() {
+                    button::primary
+                } else {
+                    button::secondary
+                })
+                .padding([10, 12]),
+            button("New game")
+                .on_press(Message::NewGameRequested)
+                .padding([10, 16]),
+        ]
+        .spacing(8);
+
         let header = row![
             container(self.header_title()).width(Fill),
             container(self.mistake_counter()).center_x(Fill),
-            container(
-                button("New game")
-                    .on_press(Message::NewGameRequested)
-                    .padding([10, 16])
-            )
-            .align_right(Fill),
+            container(actions).align_right(Fill),
         ]
         .align_y(Center);
 
