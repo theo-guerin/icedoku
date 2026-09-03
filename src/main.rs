@@ -1,12 +1,12 @@
+mod new_game;
 mod puzzle;
 mod widget;
 
 use iced::{
-    Alignment, Element, Length, Size, Theme,
-    widget::{column, container, pick_list},
+    Center, Element, Fill, Size, Theme,
+    widget::{button, column, container, row, space, text},
     window,
 };
-use strum::VariantArray;
 
 use crate::{
     puzzle::{Difficulty, get_random_puzzle},
@@ -30,14 +30,22 @@ fn main() -> iced::Result {
 
 #[derive(Debug)]
 struct IceDoku {
+    mode: Mode,
     puzzle_grid: puzzle_grid::State,
-    difficulty: Option<Difficulty>,
+    difficulty: Difficulty,
+}
+
+#[derive(Debug)]
+enum Mode {
+    Playing,
+    CreatingNewGame(new_game::NewGame),
 }
 
 #[derive(Debug, Clone)]
 enum Message {
-    GridEdited(puzzle_grid::Action),
-    DifficultySelected(Difficulty),
+    PuzzleGrid(puzzle_grid::Action),
+    NewGame(new_game::Message),
+    NewGameRequested,
 }
 
 impl IceDoku {
@@ -50,36 +58,87 @@ impl IceDoku {
         let puzzle = get_random_puzzle(difficulty);
 
         Self {
+            mode: Mode::Playing,
             puzzle_grid: puzzle_grid::State::from(&puzzle),
-            difficulty: Some(difficulty),
+            difficulty,
         }
     }
 
     fn update(&mut self, message: Message) {
         match message {
-            Message::GridEdited(action) => self.puzzle_grid.perform(action),
-            Message::DifficultySelected(difficulty) => {
-                self.difficulty = Some(difficulty);
-                let new_puzzle = get_random_puzzle(difficulty);
-                self.puzzle_grid = puzzle_grid::State::from(&new_puzzle);
+            Message::PuzzleGrid(action) => self.puzzle_grid.perform(action),
+            Message::NewGameRequested => {
+                self.mode = Mode::CreatingNewGame(new_game::NewGame::new(self.difficulty));
+            }
+            Message::NewGame(message) => {
+                let Mode::CreatingNewGame(new_game) = &mut self.mode else {
+                    return;
+                };
+
+                let Some(action) = new_game.update(message) else {
+                    return;
+                };
+
+                match action {
+                    new_game::Action::Close => {
+                        self.mode = Mode::Playing;
+                    }
+                    new_game::Action::Start(difficulty) => {
+                        self.start_new_game(difficulty);
+                        self.mode = Mode::Playing;
+                    }
+                }
             }
         }
     }
 
+    fn start_new_game(&mut self, difficulty: Difficulty) {
+        let puzzle = get_random_puzzle(difficulty);
+        self.puzzle_grid = puzzle_grid::State::from(&puzzle);
+        self.difficulty = difficulty;
+    }
+
     fn view(&self) -> Element<'_, Message> {
+        match &self.mode {
+            Mode::Playing => {
+                let header = row![
+                    self.header_title(),
+                    space::horizontal(),
+                    button("New game")
+                        .on_press(Message::NewGameRequested)
+                        .padding([10, 16]),
+                ]
+                .align_y(Center);
+
+                container(column![header, container(self.board()).center(Fill)].spacing(20))
+                    .padding(20)
+                    .center(Fill)
+                    .into()
+            }
+            Mode::CreatingNewGame(new_game) => {
+                let setup = container(new_game.view().map(Message::NewGame))
+                    .max_width(520)
+                    .width(Fill);
+
+                container(setup).padding(24).center(Fill).into()
+            }
+        }
+    }
+
+    fn header_title(&self) -> Element<'_, Message> {
         column![
-            pick_list(
-                Difficulty::VARIANTS,
-                self.difficulty,
-                Message::DifficultySelected
-            ),
-            container(aspect_ratio(
-                1.0,
-                puzzle_grid(&self.puzzle_grid).on_action(Message::GridEdited),
-            ))
-            .center(Length::Fill)
+            text("ICEDOKU").size(26),
+            text(format!("{} puzzle", self.difficulty)).size(13),
         ]
-        .align_x(Alignment::Center)
+        .spacing(2)
+        .into()
+    }
+
+    fn board(&self) -> Element<'_, Message> {
+        aspect_ratio(
+            1.0,
+            puzzle_grid(&self.puzzle_grid).on_action(Message::PuzzleGrid),
+        )
         .into()
     }
 }
