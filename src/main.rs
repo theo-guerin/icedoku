@@ -1,14 +1,16 @@
+mod game;
 mod new_game;
 mod puzzle;
 mod widget;
 
 use iced::{
     Center, Element, Fill, Size, Theme,
-    widget::{button, column, container, row, space, text},
+    widget::{button, column, container, row, text},
     window,
 };
 
 use crate::{
+    game::{Game, MAX_MISTAKES, Status},
     puzzle::{Difficulty, get_random_puzzle},
     widget::{aspect_ratio, puzzle_grid},
 };
@@ -31,8 +33,7 @@ fn main() -> iced::Result {
 #[derive(Debug)]
 struct IceDoku {
     mode: Mode,
-    puzzle_grid: puzzle_grid::State,
-    difficulty: Difficulty,
+    game: Game,
 }
 
 #[derive(Debug)]
@@ -59,16 +60,15 @@ impl IceDoku {
 
         Self {
             mode: Mode::Playing,
-            puzzle_grid: puzzle_grid::State::from(&puzzle),
-            difficulty,
+            game: Game::new(puzzle),
         }
     }
 
     fn update(&mut self, message: Message) {
         match message {
-            Message::PuzzleGrid(action) => self.puzzle_grid.perform(action),
+            Message::PuzzleGrid(action) => self.game.perform(action),
             Message::NewGameRequested => {
-                self.mode = Mode::CreatingNewGame(new_game::NewGame::new(self.difficulty));
+                self.mode = Mode::CreatingNewGame(new_game::NewGame::new(self.game.difficulty()));
             }
             Message::NewGame(message) => {
                 let Mode::CreatingNewGame(new_game) = &mut self.mode else {
@@ -94,19 +94,21 @@ impl IceDoku {
 
     fn start_new_game(&mut self, difficulty: Difficulty) {
         let puzzle = get_random_puzzle(difficulty);
-        self.puzzle_grid = puzzle_grid::State::from(&puzzle);
-        self.difficulty = difficulty;
+        self.game = Game::new(puzzle);
     }
 
     fn view(&self) -> Element<'_, Message> {
         match &self.mode {
             Mode::Playing => {
                 let header = row![
-                    self.header_title(),
-                    space::horizontal(),
-                    button("New game")
-                        .on_press(Message::NewGameRequested)
-                        .padding([10, 16]),
+                    container(self.header_title()).width(Fill),
+                    container(self.mistake_counter()).center_x(Fill),
+                    container(
+                        button("New game")
+                            .on_press(Message::NewGameRequested)
+                            .padding([10, 16])
+                    )
+                    .align_right(Fill),
                 ]
                 .align_y(Center);
 
@@ -126,19 +128,35 @@ impl IceDoku {
     }
 
     fn header_title(&self) -> Element<'_, Message> {
+        let subtitle = match self.game.status() {
+            Status::Playing => format!("{} puzzle", self.game.difficulty()),
+            Status::Won => String::from("Puzzle solved"),
+            Status::Lost => String::from("Game over"),
+        };
+
+        column![text("ICEDOKU").size(26), text(subtitle).size(13),]
+            .spacing(2)
+            .into()
+    }
+
+    fn mistake_counter(&self) -> Element<'_, Message> {
         column![
-            text("ICEDOKU").size(26),
-            text(format!("{} puzzle", self.difficulty)).size(13),
+            text(format!("{} / {}", self.game.mistakes(), MAX_MISTAKES)).size(16),
+            text("MISTAKES").size(10),
         ]
-        .spacing(2)
+        .spacing(1)
+        .align_x(Center)
         .into()
     }
 
     fn board(&self) -> Element<'_, Message> {
-        aspect_ratio(
-            1.0,
-            puzzle_grid(&self.puzzle_grid).on_action(Message::PuzzleGrid),
-        )
-        .into()
+        let grid = puzzle_grid(self.game.grid(), self.game.solution());
+        let grid = if self.game.status() == Status::Playing {
+            grid.on_action(Message::PuzzleGrid)
+        } else {
+            grid
+        };
+
+        aspect_ratio(1.0, grid).into()
     }
 }

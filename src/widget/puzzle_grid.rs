@@ -21,25 +21,31 @@ const PEER_CELL_COLOR: Color = Color::from_rgba8(101, 155, 255, 68.0 / 255.0);
 const MATCHING_DIGIT_CELL_COLOR: Color = Color::from_rgb8(139, 179, 255);
 const CLUE_DIGIT_COLOR: Color = Color::from_rgb8(51, 51, 51);
 const ENTRY_DIGIT_COLOR: Color = Color::from_rgb8(68, 68, 221);
+const INCORRECT_ENTRY_DIGIT_COLOR: Color = Color::from_rgb8(211, 47, 47);
 const CELL_LINE_COLOR: Color = Color::from_rgb8(119, 119, 119);
 const BOX_LINE_COLOR: Color = Color::from_rgb8(51, 51, 51);
 
 const DIGIT_SIZE_RATIO: f32 = 0.5;
 
-pub fn puzzle_grid<Message>(state: &State) -> PuzzleGrid<'_, Message> {
-    PuzzleGrid::new(state)
+pub fn puzzle_grid<'a, Message>(
+    state: &'a State,
+    solution: &'a [[u8; GRID_DIMENSION]; GRID_DIMENSION],
+) -> PuzzleGrid<'a, Message> {
+    PuzzleGrid::new(state, solution)
 }
 
 #[allow(missing_debug_implementations)]
 pub struct PuzzleGrid<'a, Message> {
     state: &'a State,
+    solution: &'a [[u8; GRID_DIMENSION]; GRID_DIMENSION],
     on_action: Option<Box<dyn Fn(Action) -> Message + 'a>>,
 }
 
 impl<'a, Message> PuzzleGrid<'a, Message> {
-    pub fn new(state: &'a State) -> Self {
+    pub fn new(state: &'a State, solution: &'a [[u8; GRID_DIMENSION]; GRID_DIMENSION]) -> Self {
         Self {
             state,
+            solution,
             on_action: None,
         }
     }
@@ -58,6 +64,13 @@ pub enum Action {
     ClearCell,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct CellEdit {
+    pub row: usize,
+    pub column: usize,
+    pub digit: Option<u8>,
+}
+
 #[derive(Debug)]
 pub struct State {
     cells: [[CellValue; GRID_DIMENSION]; GRID_DIMENSION],
@@ -65,11 +78,11 @@ pub struct State {
 }
 
 impl State {
-    pub fn perform(&mut self, action: Action) {
+    pub fn perform(&mut self, action: Action) -> Option<CellEdit> {
         match action {
             Action::SelectCell { row, column } => {
                 if row >= GRID_DIMENSION || column >= GRID_DIMENSION {
-                    return;
+                    return None;
                 }
 
                 self.selected_cell = Some((row, column));
@@ -78,26 +91,47 @@ impl State {
                 self.selected_cell = None;
             }
             Action::EnterDigit(digit) => {
-                let Some((row, column)) = self.selected_cell else {
-                    return;
-                };
+                let (row, column) = self.selected_cell?;
 
                 let cell = &mut self.cells[row][column];
-                if (1..=9).contains(&digit) && !cell.is_clue() {
-                    *cell = CellValue::Entry(digit);
+                let entry = CellValue::Entry(digit);
+
+                if (1..=9).contains(&digit) && !cell.is_clue() && *cell != entry {
+                    *cell = entry;
+
+                    return Some(CellEdit {
+                        row,
+                        column,
+                        digit: Some(digit),
+                    });
                 }
             }
             Action::ClearCell => {
-                let Some((row, column)) = self.selected_cell else {
-                    return;
-                };
+                let (row, column) = self.selected_cell?;
 
                 let cell = &mut self.cells[row][column];
-                if !cell.is_clue() {
+                if !cell.is_clue() && !cell.is_empty() {
                     *cell = CellValue::Empty;
+
+                    return Some(CellEdit {
+                        row,
+                        column,
+                        digit: None,
+                    });
                 }
             }
         }
+
+        None
+    }
+
+    pub fn matches_solution(&self, solution: &[[u8; GRID_DIMENSION]; GRID_DIMENSION]) -> bool {
+        self.cells.iter().zip(solution).all(|(cells, solution)| {
+            cells
+                .iter()
+                .zip(solution)
+                .all(|(cell, solution)| cell.digit() == Some(*solution))
+        })
     }
 }
 
@@ -112,7 +146,7 @@ impl From<&Puzzle> for State {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CellValue {
     Empty,
     Clue(u8),
@@ -200,12 +234,15 @@ fn draw_cell_digit(
     renderer: &mut impl text::Renderer,
     cell: &PositionedCell,
     cell_bounds: Rectangle,
+    is_incorrect: bool,
 ) {
     let Some(digit) = cell.digit() else {
         return;
     };
 
-    let color = if cell.is_clue() {
+    let color = if is_incorrect {
+        INCORRECT_ENTRY_DIGIT_COLOR
+    } else if cell.is_clue() {
         CLUE_DIGIT_COLOR
     } else {
         ENTRY_DIGIT_COLOR
@@ -449,7 +486,11 @@ where
                 };
 
                 draw_cell_highlight(renderer, &cell, cell_bounds, selected_cell.as_ref());
-                draw_cell_digit(renderer, &cell, cell_bounds);
+                let is_incorrect = !cell.is_clue()
+                    && !cell.is_empty()
+                    && cell.digit() != Some(self.solution[row_index][column_index]);
+
+                draw_cell_digit(renderer, &cell, cell_bounds, is_incorrect);
             }
         }
 
