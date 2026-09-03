@@ -140,7 +140,6 @@ impl IceDoku {
     fn win_view(&self) -> Element<'_, Message> {
         let content = column![
             text("Puzzle solved").size(32),
-            text(self.game.difficulty().to_string()).size(14),
             button("New game")
                 .on_press(Message::NewGameRequested)
                 .style(button::primary)
