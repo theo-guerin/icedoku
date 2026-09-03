@@ -47,6 +47,7 @@ enum Message {
     PuzzleGrid(puzzle_grid::Action),
     NewGame(new_game::Message),
     NewGameRequested,
+    RetryRequested,
 }
 
 impl IceDoku {
@@ -69,6 +70,9 @@ impl IceDoku {
             Message::PuzzleGrid(action) => self.game.perform(action),
             Message::NewGameRequested => {
                 self.mode = Mode::CreatingNewGame(new_game::NewGame::new(self.game.difficulty()));
+            }
+            Message::RetryRequested => {
+                self.game.restart();
             }
             Message::NewGame(message) => {
                 let Mode::CreatingNewGame(new_game) = &mut self.mode else {
@@ -99,24 +103,11 @@ impl IceDoku {
 
     fn view(&self) -> Element<'_, Message> {
         match &self.mode {
-            Mode::Playing => {
-                let header = row![
-                    container(self.header_title()).width(Fill),
-                    container(self.mistake_counter()).center_x(Fill),
-                    container(
-                        button("New game")
-                            .on_press(Message::NewGameRequested)
-                            .padding([10, 16])
-                    )
-                    .align_right(Fill),
-                ]
-                .align_y(Center);
-
-                container(column![header, container(self.board()).center(Fill)].spacing(20))
-                    .padding(20)
-                    .center(Fill)
-                    .into()
-            }
+            Mode::Playing => match self.game.status() {
+                Status::Playing => self.playing_view(),
+                Status::Won => self.win_view(),
+                Status::Lost => self.loss_view(),
+            },
             Mode::CreatingNewGame(new_game) => {
                 let setup = container(new_game.view().map(Message::NewGame))
                     .max_width(520)
@@ -127,16 +118,76 @@ impl IceDoku {
         }
     }
 
-    fn header_title(&self) -> Element<'_, Message> {
-        let subtitle = match self.game.status() {
-            Status::Playing => format!("{} puzzle", self.game.difficulty()),
-            Status::Won => String::from("Puzzle solved"),
-            Status::Lost => String::from("Game over"),
-        };
+    fn playing_view(&self) -> Element<'_, Message> {
+        let header = row![
+            container(self.header_title()).width(Fill),
+            container(self.mistake_counter()).center_x(Fill),
+            container(
+                button("New game")
+                    .on_press(Message::NewGameRequested)
+                    .padding([10, 16])
+            )
+            .align_right(Fill),
+        ]
+        .align_y(Center);
 
-        column![text("ICEDOKU").size(26), text(subtitle).size(13),]
-            .spacing(2)
+        container(column![header, container(self.board()).center(Fill)].spacing(20))
+            .padding(20)
+            .center(Fill)
             .into()
+    }
+
+    fn win_view(&self) -> Element<'_, Message> {
+        let content = column![
+            text("Puzzle solved").size(32),
+            text(self.game.difficulty().to_string()).size(14),
+            button("New game")
+                .on_press(Message::NewGameRequested)
+                .style(button::primary)
+                .padding([12, 18]),
+        ]
+        .spacing(16)
+        .align_x(Center);
+
+        container(content).padding(24).center(Fill).into()
+    }
+
+    fn loss_view(&self) -> Element<'_, Message> {
+        let actions = row![
+            button("Try again")
+                .on_press(Message::RetryRequested)
+                .style(button::primary)
+                .padding([12, 18]),
+            button("New game")
+                .on_press(Message::NewGameRequested)
+                .style(button::secondary)
+                .padding([12, 18]),
+        ]
+        .spacing(10);
+
+        let content = column![
+            text("Game over").size(32),
+            text(format!(
+                "{} / {} mistakes",
+                self.game.mistakes(),
+                MAX_MISTAKES
+            ))
+            .size(14),
+            actions,
+        ]
+        .spacing(16)
+        .align_x(Center);
+
+        container(content).padding(24).center(Fill).into()
+    }
+
+    fn header_title(&self) -> Element<'_, Message> {
+        column![
+            text("ICEDOKU").size(26),
+            text(format!("{} puzzle", self.game.difficulty())).size(13),
+        ]
+        .spacing(2)
+        .into()
     }
 
     fn mistake_counter(&self) -> Element<'_, Message> {
@@ -150,13 +201,10 @@ impl IceDoku {
     }
 
     fn board(&self) -> Element<'_, Message> {
-        let grid = puzzle_grid(self.game.grid(), self.game.solution());
-        let grid = if self.game.status() == Status::Playing {
-            grid.on_action(Message::PuzzleGrid)
-        } else {
-            grid
-        };
-
-        aspect_ratio(1.0, grid).into()
+        aspect_ratio(
+            1.0,
+            puzzle_grid(self.game.grid(), self.game.solution()).on_action(Message::PuzzleGrid),
+        )
+        .into()
     }
 }

@@ -55,6 +55,12 @@ impl Game {
         }
     }
 
+    pub fn restart(&mut self) {
+        self.grid = puzzle_grid::State::from(&self.puzzle);
+        self.mistakes = 0;
+        self.status = Status::Playing;
+    }
+
     pub fn difficulty(&self) -> Difficulty {
         self.puzzle.difficulty
     }
